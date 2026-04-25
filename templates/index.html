@@ -10,26 +10,96 @@
             margin: 0; background: #000; color: #00ffff; 
             font-family: 'Courier New', Courier, monospace; overflow: hidden;
         }
+        #globeViz { 
+            position: absolute; 
+            top: 0px; 
+            /* Empujamos el contenedor hacia la derecha. 
+            Ajusta este porcentaje según el ancho de tu terminal */
+            left: 0px; 
+            width: 100vw; /* Reducimos el ancho para que no cree scroll horizontal */
+            height: 100vh;
+            z-index: 1; 
+        }
 
-        #globeViz { position: absolute; top: 0; left: 0; z-index: 1; }
+        /* ═══════════════════════════════════════ */
+        /* ERROR CONSOLE PANEL (TOP) - NEW */
+        /* ═══════════════════════════════════════ */
+        .error-console {
+            position: fixed; top: 10px; left: 75%; transform: translateX(-75%);
+            width: 45vw; max-width: 45vw; max-height: 20vh;
+            border: 2px solid #00ffff; background: rgba(0, 0, 0, 0.7);
+            padding: 12px; z-index: 100; box-shadow: 0 0 20px #00ffff;
+            display: flex; flex-direction: column;
+            border-radius: 4px;
+        }
 
+        .console-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #00ffff; padding-bottom: 8px; margin-bottom: 8px;
+            color: #00ffff; font-weight: bold; font-size: 0.8em;
+        }
+
+        .console-buttons {
+            display: flex; gap: 6px;
+        }
+
+        .console-btn {
+            background: #00ffff; color: #000; border: none; padding: 4px 12px;
+            cursor: pointer; font-weight: bold; font-size: 0.7em;
+            border-radius: 3px; transition: 0.2s;
+        }
+
+        .console-btn:hover { background: #ff00ff; box-shadow: 0 0 10px #ff00ff; }
+
+        .console-content {
+            flex-grow: 1; overflow-y: auto; font-size: 0.75em;
+            scrollbar-width: thin; scrollbar-color: #00ffff #000;
+            min-height: 30px; max-height: 140px;
+        }
+
+        .console-message {
+            margin: 3px 0; padding: 4px 8px;
+            border-left: 3px solid;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+
+        .console-time { color: #888; font-weight: bold; min-width: 65px; }
+        .console-type { min-width: 70px; }
+
+        .msg-error { border-left-color: #ff0000; color: #ff4444; }
+        .msg-warning { border-left-color: #ffff00; color: #ffff44; }
+        .msg-success { border-left-color: #00ff00; color: #44ff44; }
+        .msg-info { border-left-color: #00ffff; color: #44ffff; }
+        .msg-debug { border-left-color: #888888; color: #aaaaaa; }
+
+        .console-collapsed .console-content { display: none; }
+        
         /* Terminal Principal */
         .terminal-box {
-            position: absolute; top: 20px; left: 20px; width: 350px; height: 90vh;
-            border: 3px solid #ff00ff; background: rgba(0, 0, 0, 0.85);
+            position: absolute; top: 20px; left: 20px; 
+            width: 25vw; 
+            max-width: 25vw; /* NUEVO: Nunca será más ancha que el 90% de la pantalla */
+            height: 90vh; 
+            /* ... el resto de tus estilos originales (border, background, etc) ... */
+            border: 3px solid #ff00ff; background: rgba(0, 0, 0, 0.7);
             padding: 20px; z-index: 10; box-shadow: 0 0 15px #ff00ff;
             overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ff00ff #000;
         }
 
-        /* Consola de Lectura (Bottom Right) */
+        /* Consola de Lectura */
         .reader-box {
-            position: absolute; bottom: 20px; right: 20px; width: 400px; height: 250px;
+            position: absolute; bottom: 20px; right: 20px; 
+            width: 70vw; 
+            max-width: 70vw; /* NUEVO */
+            height: 40vh;
+            max-height: 40vh; /* NUEVO: Para que no tape todo si se abre en un móvil */
+            /* ... el resto de tus estilos originales ... */
             border: 2px solid #00ff00; background: rgba(0, 20, 0, 0.9);
             padding: 15px; z-index: 20; box-shadow: 0 0 10px #00ff00;
             display: none; /* Oculta hasta que se selecciona una noticia */
             flex-direction: column;
         }
-
+        
         .reader-header { border-bottom: 1px solid #00ff00; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; font-weight: bold; color: #00ff00; }
         .reader-content { font-size: 0.9em; color: #00ff00; overflow-y: auto; flex-grow: 1; }
         .close-btn { cursor: pointer; color: #ff0000; }
@@ -50,11 +120,78 @@
         }
         .news-item:hover { background: rgba(255, 0, 255, 0.1); border-left-color: #ff00ff; }
         .news-link { color: #ff00ff; text-decoration: none; font-size: 0.8em; display: block; margin-top: 5px; }
+
+        /* Error Box - NEW */
+        .error-box {
+            background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; 
+            padding: 10px; border-radius: 4px; margin: 10px 0; color: #ff4444;
+        }
+
+        .retry-btn {
+            background: #00ff00; color: #000; border: none; padding: 6px 12px;
+            cursor: pointer; font-weight: bold; margin-top: 8px; border-radius: 3px;
+            transition: 0.2s;
+        }
+
+        .retry-btn:hover { background: #ff00ff; box-shadow: 0 0 8px #ff00ff; }
+/* ═══════════════════════════════════════ */
+/* RESPONSIVE DESIGN (MÓVILES Y TABLETS)   */
+/* ═══════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Centramos el globo y le devolvemos su tamaño completo */
+    #globeViz {
+        left: 0 !important;
+        width: 100vw !important;
+    }
+
+    /* Movemos la terminal principal abajo y la hacemos horizontal */
+    .terminal-box {
+        top: auto;
+        bottom: 10px;
+        left: 5vw;
+        width: 90vw;
+        height: 35vh; /* Ocupa solo el 35% inferior de la pantalla */
+        z-index: 10;
+    }
+
+    /* Ajustamos la caja del lector de noticias */
+    .reader-box {
+        bottom: 38vh; /* Se coloca justo encima de la terminal */
+        right: 5vw;
+        width: 90vw;
+        z-index: 20;
+    }
+
+    /* Centramos la consola de errores en la parte superior */
+    .error-console {
+        left: 50%;
+        transform: translateX(-50%);
+        width: 95vw;
+    }
+}
     </style>
 </head>
 <body>
 
     <div id="globeViz"></div>
+
+    <!-- ERROR CONSOLE PANEL - NEW -->
+    <div id="error-console" class="error-console">
+        <div class="console-header">
+            <span>CONSOLE_V.1</span>
+            <div class="console-buttons">
+                <button class="console-btn" onclick="clearConsole()">LIMPIAR</button>
+                <button class="console-btn" id="collapse-btn" onclick="toggleConsole()">−</button>
+            </div>
+        </div>
+        <div id="console-content" class="console-content">
+            <div class="console-message msg-info">
+                <span class="console-time">[--:--:--]</span>
+                <span class="console-type">ℹ️ INFO</span>
+                <span>Sistema iniciado. Esperando eventos...</span>
+            </div>
+        </div>
+    </div>
 
     <!-- TERMINAL PRINCIPAL -->
     <div class="terminal-box">
@@ -82,18 +219,85 @@
         let world;
         let hoverD = null;
         let selectedCountry = null;
-        const BASE_ROTATION_SPEED = 0.5;
+        const BASE_ROTATION_SPEED = 2.0;
+        let isConsoleCollapsed = false;
+
+        // ═════════════════════════════════════════
+        // SISTEMA DE CONSOLA DE ERRORES - NEW
+        // ═════════════════════════════════════════
+        function getTimeStamp() {
+            const now = new Date();
+            return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        }
+
+        function logToConsole(message, type = 'info', details = '') {
+            const timestamp = getTimeStamp();
+            const typeMap = {
+                'error': { icon: '🔴', label: 'ERROR', class: 'msg-error' },
+                'warning': { icon: '🟡', label: 'WARNING', class: 'msg-warning' },
+                'success': { icon: '🟢', label: 'SUCCESS', class: 'msg-success' },
+                'info': { icon: '🔵', label: 'INFO', class: 'msg-info' },
+                'debug': { icon: '⚫', label: 'DEBUG', class: 'msg-debug' }
+            };
+
+            const typeInfo = typeMap[type] || typeMap['info'];
+            
+            console.log(`[${timestamp}] ${typeInfo.icon} ${typeInfo.label}: ${message}`, details);
+
+            const msgEl = document.createElement('div');
+            msgEl.className = `console-message ${typeInfo.class}`;
+            msgEl.innerHTML = `
+                <span class="console-time">[${timestamp}]</span>
+                <span class="console-type">${typeInfo.icon} ${typeInfo.label}</span>
+                <span>${message}</span>
+            `;
+
+            const consoleContent = document.getElementById('console-content');
+            consoleContent.appendChild(msgEl);
+
+            const messages = consoleContent.querySelectorAll('.console-message');
+            if (messages.length > 50) {
+                messages[0].remove();
+            }
+
+            consoleContent.scrollTop = consoleContent.scrollHeight;
+        }
+
+        function clearConsole() {
+            const consoleContent = document.getElementById('console-content');
+            consoleContent.innerHTML = '';
+            logToConsole('Consola limpiada', 'info');
+        }
+
+        function toggleConsole() {
+            const console = document.getElementById('error-console');
+            const btn = document.getElementById('collapse-btn');
+            isConsoleCollapsed = !isConsoleCollapsed;
+            
+            if (isConsoleCollapsed) {
+                console.classList.add('console-collapsed');
+                btn.textContent = '+';
+            } else {
+                console.classList.remove('console-collapsed');
+                btn.textContent = '−';
+            }
+        }
+
+        // ═════════════════════════════════════════
+        // CÓDIGO ORIGINAL INTACTO
+        // ═════════════════════════════════════════
 
         // Inicializar Globe
         world = Globe()
             (document.getElementById('globeViz'))
             .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
             .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+
             .polygonSideColor(() => 'rgba(255, 0, 255, 0.2)')
             .polygonStrokeColor(() => '#ff00ff')
-            .polygonCapColor(d => d === hoverD ? 'rgba(0, 255, 255, 0.3)' : 'rgba(0, 255, 255, 0.05)')
-            .polygonAltitude(d => d === hoverD ? 0.06 : 0.00)
-            
+            .polygonCapColor(d => d === hoverD ? 'rgba(0, 255, 255, 0.3)' : 'rgba(0, 255, 255, 0.00)')
+            .polygonAltitude(d => d === hoverD ? 0.05 : 0.00175)
+
             // POINT LAYER para Bermuda y territorios pequeños
             .pointColor(() => '#ff00ff')
             .pointAltitude(0.07)
@@ -104,37 +308,77 @@
                 hoverD = poly;
                 world.polygonAltitude(world.polygonAltitude());
             })
+
             .onPolygonClick((polygon, event, { lat, lng }) => {
                 const d = polygon.properties;
-                selectNode(d.name, d.ISO_A3, lat, lng);
+                const name = d.ADMIN;
+                const code = d.ISO_A2;
+
+                selectNode(name, code, lat, lng);
             })
+            
             .onPointClick(pt => {
                 // Caso especial para Bermuda clickada como punto
                 selectNode(pt.name, pt.id, pt.lat, pt.lng);
             })
+            
             .onGlobeClick(() => { if (selectedCountry) resetToGlobal(); });
+
+        // Añadir justo debajo de la configuración inicial de tu 'world'
+        window.addEventListener('resize', (event) => {
+            // Si usaste la Opción 1 (desplazar con CSS), el ancho ya no es el de la ventana completa
+            const globeContainer = document.getElementById('globeViz');
+            world.width(globeContainer.clientWidth);
+            world.height(globeContainer.clientHeight);
+        });
 
         // Activar rotación
         world.controls().autoRotate = true;
         world.controls().autoRotateSpeed = BASE_ROTATION_SPEED;
+        
+        // Inclinamos el globo en el eje Z (ladear hacia los lados)
+        // y un poco en el eje X (hacia adelante/atrás) para darle un toque más "hacker/cinemático"
+        const tiltAng = 0.05; // Juega con este valor (es en radianes). 0.35 son unos 20 grados.
+        world.scene().rotation.z = tiltAng; 
+        world.scene().rotation.x = 0.1;
 
         // Cargar GeoJSON y procesar Bermuda
-        fetch('/static/countries.geojson')
-            .then(res => res.json())
+        logToConsole('Cargando GeoJSON...', 'info');
+fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
+            .then(res => {
+                if (!res.ok) throw new Error('No se pudo cargar GeoJSON');
+                return res.json();
+            })
+            
             .then(countries => {
 
-                // FILTRO TÁCTICO: Eliminamos Bermuda para evitar el bloqueo del globo
-                const cleanFeatures = countries.features.filter(f => f.id !== 'BMU' && f.properties.ISO_A3 !== 'BMU');
+                if (!countries || !countries.features) {
+                    console.error("GeoJSON inválido:", countries);
+                    return;
+                }
+
+                const cleanFeatures = countries.features.filter(f => 
+                    f &&
+                    f.geometry &&
+                    f.geometry.type &&
+                    f.properties
+                );
+
                 world.polygonsData(cleanFeatures);
+            })
+
+            .catch(err => {
+                logToConsole('Error cargando GeoJSON', 'error', err.message);
             });
 
         function selectNode(name, code, lat, lng) {
+            logToConsole(`📍 Seleccionando: ${name} (${code})`, 'debug');
             selectedCountry = code;
             document.getElementById('node-label').innerText = `NODE: ${name}`;
             document.getElementById('back-button').style.display = 'block';
             
-            world.pointOfView({ lat, lng, altitude: 1.5 }, 1000);
-            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.75;
+            world.pointOfView({ lat, lng, altitude: 0.6 }, 1000);
+            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.25;
             
             loadNews(code);
         }
@@ -142,10 +386,43 @@
         function loadNews(code) {
             const container = document.getElementById('news-container');
             container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
+            logToConsole(`Solicitando noticias para: ${code}`, 'info');
             
-            fetch(`/country-news?country=${code}`)
-                .then(res => res.json())
+            fetch(`/country-news?code=${code}`)
+                .then(res => {
+                    logToConsole(`Status: ${res.status}`, 'debug');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
                 .then(data => {
+                    // Verificar si hay error en la respuesta
+                    if (data.status === 'error') {
+                        logToConsole(data.message, 'error', data.details || '');
+                        container.innerHTML = `
+                            <div class="error-box">
+                                <strong>❌ ${data.type}</strong><br>
+                                ${data.message}<br>
+                                <small>${data.details || ''}</small><br>
+                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (data.status === 'warning' || !data.articles || data.articles.length === 0) {
+                        logToConsole(`⚠️ Sin artículos para ${code}`, 'warning');
+                        container.innerHTML = `
+                            <div class="error-box">
+                                <strong>⚠️ SIN RESULTADOS</strong><br>
+                                ${data.message}<br>
+                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    logToConsole(`✅ ${data.articles.length} artículos cargados`, 'success');
+                    
                     container.innerHTML = '';
                     data.articles.forEach(art => {
                         const div = document.createElement('div');
@@ -154,6 +431,16 @@
                         div.onclick = () => openReader(art);
                         container.appendChild(div);
                     });
+                })
+                .catch(err => {
+                    logToConsole('Error de conexión', 'error', err.message);
+                    container.innerHTML = `
+                        <div class="error-box">
+                            <strong>❌ ERROR</strong><br>
+                            ${err.message}<br>
+                            <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                        </div>
+                    `;
                 });
         }
 
@@ -171,16 +458,21 @@
         function closeReader() { document.getElementById('news-reader').style.display = 'none'; }
 
         function resetToGlobal() {
+            logToConsole('Reseteando a vista global', 'info');
             selectedCountry = null;
             closeReader();
             document.getElementById('node-label').innerText = `NODE: GLOBAL FEED`;
             document.getElementById('back-button').style.display = 'none';
-            world.pointOfView({ lat: 20, lng: 0, altitude: 2.5 }, 1000);
+            world.pointOfView({ lat: 20, lng: 0, altitude: 1.5 }, 1000);
             world.controls().autoRotateSpeed = BASE_ROTATION_SPEED;
             loadNews('global');
         }
 
-        window.onload = () => resetToGlobal();
+        window.onload = () => {
+            logToConsole('Aplicación cargada', 'success');
+            resetToGlobal();
+        };
+
     </script>
 </body>
 </html>
