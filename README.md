@@ -231,3 +231,63 @@ Este proyecto está bajo la licencia **MIT**. Ver `LICENSE` para más detalles.
 **Última actualización**: 2026-04-25
 
 ✨ *Made with ❤️ and cyberpunk aesthetics* ✨
+
+
+----------
+# Project Documentation for Virtual Valhalla
+
+## Comprehensive Project Overview
+This documentation aims to provide a thorough understanding of the Virtual Valhalla project, focusing on key functionalities, architecture, and usage instructions.
+
+### Cyberpunk Theme Description
+Virtual Valhalla combines the aesthetics of a neon-drenched cyberpunk universe with advanced technology to create an immersive user experience. Users navigate through a digital landscape filled with futuristic elements, mirroring the complexities of a high-tech society.
+
+### API Key Management
+The application supports multiple API keys, enabling enhanced security and management. Users can generate, revoke, and rotate keys through a simplified interface.
+
+### Advanced Error Handling
+With built-in error detection, the system can identify and manage rate limiting, ensuring that users receive feedback regarding their request limits. This allows for smoother user interactions and improved overall system resilience.
+
+### System Architecture
+The architecture of Virtual Valhalla comprises the following components:
+- **Client**: The user-facing interface that interacts with backend services.
+- **Server**: A RESTful API handling requests and responses.
+- **Database**: Stores user data, API keys, and logs for auditing and troubleshooting.
+
+### Usage Instructions
+To get started:
+1. Clone the repository.
+2. Set up your environment.
+3. Configure your API keys in the `.env` file.
+4. Start the server and access the client.
+
+### Troubleshooting Guide
+- **Rate Limiting Error**: Ensure that you are not exceeding the request limit set by the API. Review your request patterns.
+- **Configuration Issues**: Double-check API key placements and environment variables.
+- **Database Connectivity**: Make sure your database is up and running and that the connection strings are correct.
+
+### Features Documentation
+- **User Authentication**: Secure login and registration processes.
+- **Data Fetching**: Robust methods to retrieve and manipulate data seamlessly.
+
+### Endpoints Documentation
+- **GET /api/data**: Retrieve data using various queries.
+- **POST /api/key**: Create a new API key.
+- **DELETE /api/key/{id}**: Revoke an API key.
+
+### Technologies Used
+- **Frontend**: React.js
+- **Backend**: Node.js with Express
+- **Database**: MongoDB
+
+### Contribution Guidelines
+We welcome contributions! Please fork this repository and submit a pull request for your proposed changes. Don't forget to include tests where applicable.
+
+### Future Roadmap
+- **Add support for additional APIs**
+- **Enhance UI with more interactive features**
+- **Implement machine learning for predictive analytics**
+
+## Conclusion
+This document serves as a living guide. Keep it updated to reflect the most accurate information about the project as it evolves.  
+For more information, visit our [GitHub repository](https://github.com/Virtual-Valhalla/News_globo).
