@@ -16,10 +16,9 @@ logger = logging.getLogger(__name__)
 API_KEYS = [
     {'key': '4589a11eefb74bdbb8d2c5b4f5dfa505', 'requests_used': 0, 'rate_limited': False},
     {'key': 'ae40fe4131b040c9b0f69dd6002a94d5', 'requests_used': 0, 'rate_limited': False},
-    {'key': 'tu_tercera_api_key', 'requests_used': 0, 'rate_limited': False},
 ]
 current_api_index = 0
-MAX_RETRIES = 3
+MAX_RETRIES = 99
 
 def get_next_available_key():
     """Obtiene la siguiente API key disponible (no rate-limited)"""

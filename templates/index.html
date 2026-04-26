@@ -4,200 +4,383 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TERMINAL_V.1 - GEO-SCANNER</title>
+    <!-- 🌐 Librería para renderizar globos terráqueos 3D interactivos -->
     <script src="//unpkg.com/globe.gl"></script>
     <style>
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 1: ESTILOS GLOBALES Y ESTRUCTURA BASE                       */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* 🎨 Estilos del cuerpo: fondo negro, fuente monoespaciada (estilo terminal) */
         body { 
-            margin: 0; background: #000; color: #00ffff; 
-            font-family: 'Courier New', Courier, monospace; overflow: hidden;
+            margin: 0; 
+            background: #000;              /* Fondo negro */
+            color: #00ffff;                 /* Texto cian */
+            font-family: 'Courier New', Courier, monospace;  /* Fuente terminal */
+            overflow: hidden;               /* Sin scroll en la página */
         }
+        
+        /* 🌍 Contenedor del globo: ocupa toda la pantalla */
         #globeViz { 
             position: absolute; 
             top: 0px; 
-            /* Empujamos el contenedor hacia la derecha. 
-            Ajusta este porcentaje según el ancho de tu terminal */
             left: 0px; 
-            width: 100vw; /* Reducimos el ancho para que no cree scroll horizontal */
+            width: 100vw; 
             height: 100vh;
-            z-index: 1; 
+            z-index: 1;                     /* Por debajo de los paneles */
         }
 
-        /* ═══════════════════════════════════════ */
-        /* ERROR CONSOLE PANEL (TOP) - NEW */
-        /* ═══════════════════════════════════════ */
-        .error-console {
-            position: fixed; top: 10px; 
-            left: 75%; transform: translateX(-75%);
-            width: 45vw; 
-            max-width: 88.5vw;
-            max-height: 20vh;
-
-            border: 2px solid #00ffff; background: rgba(0, 0, 0, 0.7);
-            padding: 12px; box-shadow: 0 0 20px #00ffff;
-            display: flex; flex-direction: column;
-            border-radius: 4px;
-
-            left: 75%; transform: translateX(-75%);
-            z-index: 100; 
-        }
-
-        .console-header {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #00ffff; padding-bottom: 8px; margin-bottom: 8px;
-            color: #00ffff; font-weight: bold; font-size: 0.8em;
-        }
-
-        .console-buttons {
-            display: flex; gap: 6px;
-        }
-
-        .console-btn {
-            background: #00ffff; color: #000; border: none; padding: 4px 12px;
-            cursor: pointer; font-weight: bold; font-size: 0.7em;
-            border-radius: 3px; transition: 0.2s;
-        }
-
-        .console-btn:hover { background: #ff00ff; box-shadow: 0 0 10px #ff00ff; }
-
-        .console-content {
-            flex-grow: 1; overflow-y: auto; font-size: 0.75em;
-            scrollbar-width: thin; scrollbar-color: #00ffff #000;
-            min-height: 30px; max-height: 140px;
-        }
-
-        .console-message {
-            margin: 3px 0; padding: 4px 8px;
-            border-left: 3px solid;
-            display: flex; align-items: flex-start; gap: 8px;
-        }
-
-        .console-time { color: #888; font-weight: bold; min-width: 65px; }
-        .console-type { min-width: 70px; }
-
-        .msg-error { border-left-color: #ff0000; color: #ff4444; }
-        .msg-warning { border-left-color: #ffff00; color: #ffff44; }
-        .msg-success { border-left-color: #00ff00; color: #44ff44; }
-        .msg-info { border-left-color: #00ffff; color: #44ffff; }
-        .msg-debug { border-left-color: #888888; color: #aaaaaa; }
-
-        .console-collapsed .console-content { display: none; }
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 2: PANEL DE CONSOLA DE ERRORES (ESQUINA SUPERIOR CENTRAL)  */
+        /* ════════════════════════════════════════════════════════════════════ */
         
-        /* Terminal Principal */
+        /* 📋 Contenedor principal de la consola */
+        .error-console {
+            position: fixed; 
+            top: 10px; 
+            right: 10px; 
+/*
+            left: 50%; 
+            transform: translateX(-50%);    /* Centrado horizontalmente */
+*/
+            width: 45vw; 
+            max-width: 45vw;
+            max-height: 20vh;
+            border: 2px solid #00ffff;      /* Borde cian */
+            background: rgba(0, 0, 0, 0.7); /* Fondo semi-transparente */
+            padding: 12px; 
+            z-index: 100;                   /* Por encima de todo */
+            box-shadow: 0 0 20px #00ffff;   /* Brillo cian */
+            display: flex; 
+            flex-direction: column;
+            border-radius: 4px;
+        }
+
+        /* 📌 Encabezado de la consola con título y botones */
+        .console-header {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border-bottom: 2px solid #00ffff; 
+            padding-bottom: 8px; 
+            margin-bottom: 8px;
+            color: #00ffff; 
+            font-weight: bold; 
+            font-size: 0.8em;
+        }
+
+        /* 🔘 Contenedor de botones de la consola */
+        .console-buttons {
+            display: flex; 
+            gap: 6px;
+        }
+
+        /* ⚙️ Estilo de botones individuales */
+        .console-btn {
+            background: #00ffff; 
+            color: #000; 
+            border: none; 
+            padding: 4px 12px;
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 0.7em;
+            border-radius: 3px; 
+            transition: 0.2s;              /* Animación suave */
+        }
+
+        /* ✨ Efecto hover en botones */
+        .console-btn:hover { 
+            background: #ff00ff; 
+            box-shadow: 0 0 10px #ff00ff;   /* Brillo magenta */
+        }
+
+        /* 📜 Área de contenido de la consola con scroll */
+        .console-content {
+            flex-grow: 1; 
+            overflow-y: auto; 
+            font-size: 0.75em;
+            scrollbar-width: thin; 
+            scrollbar-color: #00ffff #000;
+            min-height: 30px; 
+            max-height: 140px;
+        }
+
+        /* 💬 Estilo individual de cada mensaje en la consola */
+        .console-message {
+            margin: 3px 0; 
+            padding: 4px 8px;
+            border-left: 3px solid;         /* Línea de color según tipo */
+            display: flex; 
+            align-items: flex-start; 
+            gap: 8px;
+        }
+
+        /* ⏰ Timestamp de cada mensaje */
+        .console-time { 
+            color: #888; 
+            font-weight: bold; 
+            min-width: 65px; 
+        }
+
+        /* 🏷️ Tipo/categoría del mensaje */
+        .console-type { 
+            min-width: 70px; 
+        }
+
+        /* 🎯 Estilos por tipo de mensaje */
+        .msg-error { border-left-color: #ff0000; color: #ff4444; }      /* Rojo */
+        .msg-warning { border-left-color: #ffff00; color: #ffff44; }    /* Amarillo */
+        .msg-success { border-left-color: #00ff00; color: #44ff44; }    /* Verde */
+        .msg-info { border-left-color: #00ffff; color: #44ffff; }       /* Cian */
+        .msg-debug { border-left-color: #888888; color: #aaaaaa; }      /* Gris */
+
+        /* 🔽 Oculta contenido cuando la consola está colapsada */
+        .console-collapsed .console-content { 
+            display: none; 
+        }
+        
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 3: TERMINAL PRINCIPAL (PANEL IZQUIERDO)                    */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* 📱 Contenedor de la terminal principal con lista de noticias */
         .terminal-box {
-            position: absolute; top: 20px; left: 20px; 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
             width: 25vw; 
             max-width: 25vw; 
             height: 90vh; 
-            /* ... el resto de tus estilos originales (border, background, etc) ... */
-            border: 3px solid #ff00ff; background: rgba(0, 0, 0, 0.7);
-            padding: 20px; z-index: 10; box-shadow: 0 0 15px #ff00ff;
-            overflow-y: auto; scrollbar-width: thin; scrollbar-color: #ff00ff #000;
+            border: 3px solid #ff00ff;      /* Borde magenta */
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px; 
+            z-index: 10; 
+            box-shadow: 0 0 15px #ff00ff;   /* Brillo magenta */
+            overflow-y: auto;               /* Scroll vertical */
+            scrollbar-width: thin; 
+            scrollbar-color: #ff00ff #000;
         }
 
-        /* Consola de Lectura */
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 4: CONSOLA DE LECTURA (PANEL DERECHO INFERIOR)             */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* 📄 Panel para mostrar el contenido completo de una noticia */
         .reader-box {
-            position: absolute; bottom: 20px; right: 20px; 
+            position: absolute; 
+            bottom: 20px; 
+            right: 20px; 
             width: 45vw; 
-            max-width: 45vw; /* NUEVO */
+            max-width: 45vw; 
             height: 30vh;
-
-            border: 2px solid #00ff00; background: rgba(0, 20, 0, 0.9);
-            padding: 15px; z-index: 20; box-shadow: 0 0 10px #00ff00;
-            display: none; /* Oculta hasta que se selecciona una noticia */
+            border: 2px solid #00ff00;      /* Borde verde */
+            background: rgba(0, 20, 0, 0.9); /* Fondo verde oscuro */
+            padding: 15px; 
+            z-index: 20; 
+            box-shadow: 0 0 10px #00ff00;   /* Brillo verde */
+            display: none;                  /* Oculto por defecto */
             flex-direction: column;
         }
         
-        .reader-header { border-bottom: 1px solid #00ff00; padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; font-weight: bold; color: #00ff00; }
-        .reader-content { font-size: 0.9em; color: #00ff00; overflow-y: auto; flex-grow: 1; }
-        .close-btn { cursor: pointer; color: #ff0000; }
+        /* 🏆 Encabezado del lector con título y botón de cerrar */
+        .reader-header { 
+            border-bottom: 1px solid #00ff00; 
+            padding-bottom: 5px; 
+            margin-bottom: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            font-weight: bold; 
+            color: #00ff00; 
+        }
+        
+        /* 📖 Área de contenido del lector */
+        .reader-content { 
+            font-size: 0.9em; 
+            color: #00ff00; 
+            overflow-y: auto; 
+            flex-grow: 1; 
+        }
+        
+        /* ❌ Botón de cerrar */
+        .close-btn { 
+            cursor: pointer; 
+            color: #ff0000; 
+        }
 
-        h2 { color: #00ffff; border-bottom: 2px solid #00ffff; padding-bottom: 10px; margin-top: 0; }
-        .status-line { margin: 10px 0; font-weight: bold; }
-        .active { color: #00ff00; }
-        .node-info { color: #ff00ff; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 5: ESTILOS DE TEXTO Y ELEMENTOS DE CONTENIDO               */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* 📝 Títulos de sección */
+        h2 { 
+            color: #00ffff; 
+            border-bottom: 2px solid #00ffff; 
+            padding-bottom: 10px; 
+            margin-top: 0; 
+        }
+        
+        /* 📊 Líneas de estado */
+        .status-line { 
+            margin: 10px 0; 
+            font-weight: bold; 
+        }
+        
+        /* ✅ Texto de estado activo (verde) */
+        .active { 
+            color: #00ff00; 
+        }
+        
+        /* 🏷️ Información del nodo seleccionado */
+        .node-info { 
+            color: #ff00ff; 
+            margin-bottom: 20px; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+        }
 
+        /* ═════════════════════════════════════════════════════════���══════════ */
+        /* SECCIÓN 6: BOTONES E INTERACCIÓN                                   */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* 🔙 Botón para resetear la cámara */
         .back-btn {
-            display: none; background: #ff00ff; color: #000; padding: 8px 12px;
-            font-weight: bold; cursor: pointer; margin-bottom: 15px; border: none; width: 100%; text-align: left;
+            display: none;                  /* Oculto hasta seleccionar un país */
+            background: #ff00ff; 
+            color: #000; 
+            padding: 8px 12px;
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-bottom: 15px; 
+            border: none; 
+            width: 100%; 
+            text-align: left;
         }
 
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 7: ELEMENTOS DE NOTICIAS                                   */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* 📰 Elemento individual de noticia */
         .news-item {
-            margin-bottom: 20px; padding: 10px; border-left: 2px solid #00ffff;
-            background: rgba(0, 255, 255, 0.05); cursor: pointer; transition: 0.2s;
+            margin-bottom: 20px; 
+            padding: 10px; 
+            border-left: 2px solid #00ffff;
+            background: rgba(0, 255, 255, 0.05);  /* Fondo cian muy tenue */
+            cursor: pointer; 
+            transition: 0.2s;
         }
-        .news-item:hover { background: rgba(255, 0, 255, 0.1); border-left-color: #ff00ff; }
-        .news-link { color: #ff00ff; text-decoration: none; font-size: 0.8em; display: block; margin-top: 5px; }
+        
+        /* 🖱️ Efecto hover en noticias */
+        .news-item:hover { 
+            background: rgba(255, 0, 255, 0.1);   /* Fondo magenta al pasar ratón */
+            border-left-color: #ff00ff; 
+        }
+        
+        /* 🔗 Enlace a fuente externa */
+        .news-link { 
+            color: #ff00ff; 
+            text-decoration: none; 
+            font-size: 0.8em; 
+            display: block; 
+            margin-top: 5px; 
+        }
 
-        /* Error Box - NEW */
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 8: CAJAS DE ERROR Y BOTONES DE REINTENTO                   */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /* ⚠️ Contenedor para mostrar errores */
         .error-box {
-            background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0000; 
-            padding: 10px; border-radius: 4px; margin: 10px 0; color: #ff4444;
+            background: rgba(255, 0, 0, 0.1);     /* Fondo rojo tenue */
+            border: 1px solid #ff0000; 
+            padding: 10px; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+            color: #ff4444;                       /* Rojo claro */
         }
 
+        /* 🔄 Botón para reintentar operaciones */
         .retry-btn {
-            background: #00ff00; color: #000; border: none; padding: 6px 12px;
-            cursor: pointer; font-weight: bold; margin-top: 8px; border-radius: 3px;
+            background: #00ff00; 
+            color: #000; 
+            border: none; 
+            padding: 6px 12px;
+            cursor: pointer; 
+            font-weight: bold; 
+            margin-top: 8px; 
+            border-radius: 3px; 
             transition: 0.2s;
         }
 
-        .retry-btn:hover { background: #ff00ff; box-shadow: 0 0 8px #ff00ff; }
-/* ═══════════════════════════════════════ */
-/* RESPONSIVE DESIGN (MÓVILES Y TABLETS)   */
-/* ═══════════════════════════════════════ */
-@media (max-width: 768px) {
-    /* Centramos el globo y le devolvemos su tamaño completo */
-    #globeViz {
-        left: 0 !important;
-        width: 100vw !important;
-        max-width: 100vw;
-    }
-
-    /* Movemos la terminal principal abajo y la hacemos horizontal */
-    .terminal-box {
-        position: fixed;
-        top: auto;
-        bottom: 0vw;
-        left: auto;
-        width: 100vw;
-        max-width: 88.5vw;
-        height: 20vh; 
-        max-height: 20vh; 
-        z-index: 10;
-    }
-
-    /* Ajustamos la caja del lector de noticias */
-    .reader-box {
-        bottom: 25vh; 
-        left: auto;
-        width: 100vw;
-        max-width: 80vw;
-        height: 40vh; /* Ocupa solo el 35% inferior de la pantalla */
-        max-height: 40vh; /* Ocupa solo el 35% inferior de la pantalla */
-        z-index: 20;
-    }
-
-    /* Centramos la consola de errores en la parte superior */
-    .error-console {
-        position: fixed;
-        top: auto;
-        left: auto;
-        width: 100vw;
-        max-width: 93vw;
-        max-height: 20vh; 
-        z-index: 10;
-            border: 2px solid #00ffff; background: rgba(0, 0, 0, 0.7);
-            padding: 12px; box-shadow: 0 0 20px #00ffff;
-            display: flex; flex-direction: column;
-            border-radius: 4px;
-        left: 25%; transform: translateX(-25%);
+        /* ✨ Efecto hover en botón reintento */
+        .retry-btn:hover { 
+            background: #ff00ff; 
+            box-shadow: 0 0 8px #ff00ff; 
         }
-}
+
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* SECCIÓN 9: DISEÑO RESPONSIVO (MÓVILES Y TABLETS)                   */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        @media (max-width: 768px) {
+            /* 📱 Globo ocupa pantalla completa en móvil */
+            #globeViz {
+                left: 0 !important;
+                width: 100vw !important;
+                max-width: 100vw;
+            }
+
+            /* 📱 Terminal principal se mueve abajo en móvil */
+            .terminal-box {
+                position: fixed;
+                top: auto;
+                bottom: 0;
+                left: 0;
+                width: 100vw;
+                max-width: 100vw;
+                height: 20vh; 
+                max-height: 20vh; 
+                z-index: 10;
+                border-radius: 8px 8px 0 0;
+            }
+
+            /* 📱 Lector de noticias se ajusta para móvil */
+            .reader-box {
+                bottom: 22vh; 
+                left: 0;
+                right: 0;
+                width: 100vw;
+                max-width: 100vw;
+                height: 35vh; 
+                max-height: 35vh; 
+                z-index: 20;
+                border-radius: 8px;
+            }
+
+            /* 📱 Consola de errores centrada en móvil */
+            .error-console {
+                position: fixed;
+                top: 5px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 90vw;
+                max-width: 90vw;
+                max-height: 15vh; 
+                z-index: 100;
+            }
+        }
     </style>
 </head>
 <body>
 
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 🌍 GLOBO 3D INTERACTIVO                                             -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <div id="globeViz"></div>
 
-    <!-- ERROR CONSOLE PANEL - NEW -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 📋 PANEL DE CONSOLA DE ERRORES                                      -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <div id="error-console" class="error-console">
         <div class="console-header">
             <span>CONSOLE_V.1</span>
@@ -215,7 +398,9 @@
         </div>
     </div>
 
-    <!-- TERMINAL PRINCIPAL -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 📱 TERMINAL PRINCIPAL - LISTA DE NOTICIAS                           -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <div class="terminal-box">
         <h2>NEWS_TERMINAL_V.1</h2>
         <div class="status-line">STATUS: <span class="active">ACTIVE</span></div>
@@ -226,34 +411,53 @@
         </div>
     </div>
 
-    <!-- CONSOLA DE LECTURA -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 📄 CONSOLA DE LECTURA - ARTÍCULO COMPLETO                           -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
     <div id="news-reader" class="reader-box">
         <div class="reader-header">
             <span>DATA_DECRYPTOR_V.1</span>
             <span class="close-btn" onclick="closeReader()">[X]</span>
         </div>
         <div id="reader-body" class="reader-content">
-            <!-- Contenido de la noticia -->
+            <!-- 📝 Contenido dinámico de la noticia -->
         </div>
     </div>
 
     <script>
-        let world;
-        let hoverD = null;
-        let selectedCountry = null;
-        const BASE_ROTATION_SPEED = 2.0;
-        let isConsoleCollapsed = false;
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 🔧 SECCIÓN 1: VARIABLES GLOBALES Y CONFIGURACIÓN                    */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        let world;                              // 🌍 Instancia del globo 3D
+        let hoverD = null;                      // 🖱️ Polígono bajo el ratón
+        let selectedCountry = null;             // 🗺️ Código del país seleccionado
+        const BASE_ROTATION_SPEED = 1.0;        // ⚙️ Velocidad de rotación automática
+        let isConsoleCollapsed = false;         // 📋 Estado de la consola
 
-        // ═════════════════════════════════════════
-        // SISTEMA DE CONSOLA DE ERRORES - NEW
-        // ═════════════════════════════════════════
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 📋 SECCIÓN 2: SISTEMA DE CONSOLA DE ERRORES                        */
+        /* ════════════════════════════════════════════════════════════════════ */
+        
+        /**
+         * ⏰ Genera un timestamp formateado (HH:MM:SS)
+         * @returns {string} Timestamp en formato HH:MM:SS
+         */
         function getTimeStamp() {
             const now = new Date();
             return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         }
 
+        /**
+         * 📝 Registra un mensaje en la consola visual
+         * @param {string} message - Texto del mensaje
+         * @param {string} type - Tipo: 'error', 'warning', 'success', 'info', 'debug'
+         * @param {string} details - Detalles adicionales (opcional)
+         */
         function logToConsole(message, type = 'info', details = '') {
             const timestamp = getTimeStamp();
+            
+            // 🎯 Mapa de tipos con iconos, etiquetas y clases CSS
             const typeMap = {
                 'error': { icon: '🔴', label: 'ERROR', class: 'msg-error' },
                 'warning': { icon: '🟡', label: 'WARNING', class: 'msg-warning' },
@@ -262,10 +466,13 @@
                 'debug': { icon: '⚫', label: 'DEBUG', class: 'msg-debug' }
             };
 
+            // 📌 Obtener información del tipo, usar 'info' por defecto
             const typeInfo = typeMap[type] || typeMap['info'];
             
+            // 🖥️ Registrar en la consola del navegador
             console.log(`[${timestamp}] ${typeInfo.icon} ${typeInfo.label}: ${message}`, details);
 
+            // 🎨 Crear elemento visual para el mensaje
             const msgEl = document.createElement('div');
             msgEl.className = `console-message ${typeInfo.class}`;
             msgEl.innerHTML = `
@@ -274,23 +481,32 @@
                 <span>${message}</span>
             `;
 
+            // ➕ Agregar mensaje a la consola
             const consoleContent = document.getElementById('console-content');
             consoleContent.appendChild(msgEl);
 
+            // 🔄 Limitar a 50 mensajes (eliminar primero si se excede)
             const messages = consoleContent.querySelectorAll('.console-message');
             if (messages.length > 50) {
                 messages[0].remove();
             }
 
+            // 📍 Auto-scroll al final
             consoleContent.scrollTop = consoleContent.scrollHeight;
         }
 
+        /**
+         * 🗑️ Limpia todos los mensajes de la consola
+         */
         function clearConsole() {
             const consoleContent = document.getElementById('console-content');
             consoleContent.innerHTML = '';
             logToConsole('Consola limpiada', 'info');
         }
 
+        /**
+         * 🔽 Alterna entre contraer y expandir la consola
+         */
         function toggleConsole() {
             const console = document.getElementById('error-console');
             const btn = document.getElementById('collapse-btn');
@@ -305,90 +521,89 @@
             }
         }
 
-        // ═════════════════════════════════════════
-        // CÓDIGO ORIGINAL INTACTO
-        // ═════════════════════════════════════════
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 🌍 SECCIÓN 3: INICIALIZACIÓN DEL GLOBO 3D                          */
+        /* ════════════════════════════════════════════════════════════════════ */
 
-        // Inicializar Globe
+        // 🌎 Crear instancia del globo 3D
         world = Globe()
             (document.getElementById('globeViz'))
+            // 🌙 Imagen de la tierra (noche)
             .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            // ⭐ Imagen del cielo/espacio
             .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
 
+            // 🎨 Colores y propiedades de los polígonos (países)
             .polygonSideColor(() => 'rgba(255, 0, 255, 0.2)')
             .polygonStrokeColor(() => '#ff00ff')
+            // ✨ Color más brillante al pasar el ratón
             .polygonCapColor(d => d === hoverD ? 'rgba(0, 255, 255, 0.3)' : 'rgba(0, 255, 255, 0.00)')
+            // 📈 Altura más elevada al pasar el ratón
             .polygonAltitude(d => d === hoverD ? 0.05 : 0.00175)
 
-            // POINT LAYER para Bermuda y territorios pequeños
+            // 📍 Configurar puntos para territorios pequeños
             .pointColor(() => '#ff00ff')
             .pointAltitude(0.07)
             .pointRadius(0.5)
             .pointsMerge(true)
             
+            // 🖱️ Evento: al pasar el ratón sobre un polígono
             .onPolygonHover(poly => {
                 hoverD = poly;
                 world.polygonAltitude(world.polygonAltitude());
             })
 
-.onPolygonClick((polygon, event, { lat, lng }) => {
-    logToConsole(`🖱️ Polígono clickeado. Inspeccionando propiedades...`, 'debug');
-    
-    const d = polygon.properties;
-    console.log("📋 Propiedades del polígono:", d); // Para inspeccionar en DevTools
-    logToConsole(`📋 Propiedades: ${JSON.stringify(Object.keys(d))}`, 'debug');
-    
-    // Intentar múltiples combinaciones de nombres de propiedades
-    const name = d.ADMIN || d.name || d.NAME || d.properties?.ADMIN || 'Unknown Country';
-    const code = d.ISO_A2 || d.iso_a2 || d.code || d.CODE || null;
-    
-    if (!code) {
-        logToConsole(`❌ No se encontró código ISO para: ${name}. Propiedades: ${JSON.stringify(d)}`, 'error');
-        console.error("Propiedades completas del GeoJSON:", d);
-        return;
-    }
-    
-    selectNode(name, code.toLowerCase(), lat, lng);
-})
-/*
+            // 🖱️ Evento: al hacer clic en un polígono
             .onPolygonClick((polygon, event, { lat, lng }) => {
+                logToConsole(`🖱️ Polígono clickeado. Inspeccionando propiedades...`, 'debug');
+                
                 const d = polygon.properties;
-                const name = d.ADMIN;
-                const code = d.ISO_A2;
-
-                selectNode(name, code, lat, lng);
+                console.log("📋 Propiedades del polígono:", d);
+                
+                // 🔍 Intentar múltiples variaciones de nombres de propiedades
+                const name = d.ADMIN || d.name || d.NAME || 'Unknown Country';
+                const code = d.ISO_A2 || d.iso_a2 || d.code || d.CODE || null;
+                
+                // ✅ Validar que tenemos un código válido
+                if (!code) {
+                    logToConsole(`❌ No se encontró código ISO para: ${name}`, 'error');
+                    return;
+                }
+                
+                selectNode(name, code.toLowerCase(), lat, lng);
             })
-*/            
+            
+            // 🖱️ Evento: al hacer clic en un punto (territorio pequeño)
             .onPointClick(pt => {
-                // Caso especial para Bermuda clickada como punto
                 selectNode(pt.name, pt.id, pt.lat, pt.lng);
             })
             
+            // 🖱️ Evento: al hacer clic en el globo (sin país seleccionado)
             .onGlobeClick(() => { if (selectedCountry) resetToGlobal(); });
 
-        // Añadir justo debajo de la configuración inicial de tu 'world'
+        // 📏 Ajustar tamaño del globo al redimensionar la ventana
         window.addEventListener('resize', (event) => {
-            // Si usaste la Opción 1 (desplazar con CSS), el ancho ya no es el de la ventana completa
             const globeContainer = document.getElementById('globeViz');
             world.width(globeContainer.clientWidth);
             world.height(globeContainer.clientHeight);
         });
 
-        // Activar rotación
+        // 🔄 Activar rotación automática del globo
         world.controls().autoRotate = true;
         world.controls().autoRotateSpeed = BASE_ROTATION_SPEED;
         
-        // Inclinamos el globo en el eje Z (ladear hacia los lados)
-        // y un poco en el eje X (hacia adelante/atrás) para darle un toque más "hacker/cinemático"
-        const tiltAng = 0.05; // Juega con este valor (es en radianes). 0.35 son unos 20 grados.
-        world.scene().rotation.z = tiltAng; 
-        world.scene().rotation.x = 0.1;
+        // 📐 Inclinar el globo para efecto cinemático
+        const tiltAng = 0.05;  // 📊 Radianes (~3 grados)
+        world.scene().rotation.z = tiltAng;  // 🔄 Ladeo lateral
+        world.scene().rotation.x = 0.1;      // 🔄 Inclinación frontal
 
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 📥 SECCIÓN 4: CARGA DE DATOS GEOGRÁFICOS (GeoJSON)                 */
+        /* ════════════════════════════════════════════════════════════════════ */
 
-        // Cargar GeoJSON y procesar Bermuda
         logToConsole('Cargando GeoJSON...', 'info');
         
-        // Usar un GeoJSON que tenga códigos ISO correctamente
+        // 📥 Descargar datos de países desde GeoJSON
         fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('No se pudo cargar GeoJSON');
@@ -396,54 +611,55 @@
             })
             
             .then(countries => {
+                // ✅ Validar estructura del GeoJSON
                 if (!countries || !countries.features) {
                     logToConsole('GeoJSON inválido', 'error');
-                    console.error("GeoJSON inválido:", countries);
                     return;
                 }
 
                 // 🔧 PROCESAR Y VALIDAR FEATURES
-                const cleanFeatures = countries.features.map(f => {
-                    if (!f || !f.geometry || !f.properties) return null;
-                    
-                    // Normalizar propiedades a un estándar
-                    const props = f.properties;
-                    const normalized = {
-                        ...props,
-                        // Asegurar que tenemos un nombre
-                        ADMIN: props.ADMIN || props.NAME || props.name || 'Unknown',
-                        // Asegurar que tenemos código ISO
-                        ISO_A2: props.ISO_A2 || props.iso_a2 || props.code || 'XX'
-                    };
-                    
-                    return {
-                        ...f,
-                        properties: normalized
-                    };
-                }).filter(f => {
-                    if (!f) return false;
-                    const props = f.properties;
-                    
-                    // Validar que tenga nombre y código válido
-                    const hasValidName = props.ADMIN && props.ADMIN !== 'Unknown';
-                    const hasValidCode = props.ISO_A2 && props.ISO_A2 !== 'XX' && props.ISO_A2.length === 2;
-                    
-                    if (!hasValidName || !hasValidCode) {
-                        logToConsole(`⚠️ Feature descartado: ${props.ADMIN || 'Unknown'} - Code: ${props.ISO_A2 || 'XX'}`, 'debug');
-                        return false;
-                    }
-                    
-                    return true;
-                });
+                const cleanFeatures = countries.features
+                    .map(f => {
+                        // 🚫 Filtrar features inválidos
+                        if (!f || !f.geometry || !f.properties) return null;
+                        
+                        // ⚙️ Normalizar propiedades
+                        const props = f.properties;
+                        const normalized = {
+                            ...props,
+                            ADMIN: props.ADMIN || props.NAME || props.name || 'Unknown',
+                            ISO_A2: props.ISO_A2 || props.iso_a2 || props.code || 'XX'
+                        };
+                        
+                        return {
+                            ...f,
+                            properties: normalized
+                        };
+                    })
+                    .filter(f => {
+                        if (!f) return false;
+                        const props = f.properties;
+                        
+                        // ✅ Validar nombre y código ISO válido
+                        const hasValidName = props.ADMIN && props.ADMIN !== 'Unknown';
+                        const hasValidCode = props.ISO_A2 && props.ISO_A2 !== 'XX' && props.ISO_A2.length === 2;
+                        
+                        if (!hasValidName || !hasValidCode) {
+                            return false;
+                        }
+                        
+                        return true;
+                    });
 
+                // 📊 Verificar que se cargaron países válidos
                 if (cleanFeatures.length === 0) {
                     logToConsole('❌ No se encontraron países válidos en el GeoJSON', 'error');
                     return;
                 }
 
                 logToConsole(`✅ ${cleanFeatures.length} países cargados correctamente`, 'success');
-                console.log('📋 Primeros 3 países:', cleanFeatures.slice(0, 3).map(f => ({ name: f.properties.ADMIN, code: f.properties.ISO_A2 })));
                 
+                // 🌍 Cargar datos en el globo
                 world.polygonsData(cleanFeatures);
             })
 
@@ -452,8 +668,19 @@
                 console.error('GeoJSON Error:', err);
             });
 
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 🗺️ SECCIÓN 5: FUNCIONES DE INTERACCIÓN CON PAÍSES                  */
+        /* ════════════════════════════════════════════════════════════════════ */
+
+        /**
+         * 🗺️ Selecciona un país y carga sus noticias
+         * @param {string} name - Nombre del país
+         * @param {string} code - Código ISO del país
+         * @param {number} lat - Latitud del centro del país
+         * @param {number} lng - Longitud del centro del país
+         */
         function selectNode(name, code, lat, lng) {
-            // Validaciones robustas
+            // ✅ Validaciones robustas
             if (!code || code === 'undefined' || code === '' || code === null) {
                 logToConsole(`❌ Código de país inválido (${code})`, 'error');
                 return;
@@ -464,109 +691,142 @@
                 return;
             }
             
-            // Normalizar código a minúsculas (NewsAPI usa minúsculas)
+            // 🔤 Normalizar código a minúsculas (NewsAPI usa minúsculas)
             const normalizedCode = String(code).toLowerCase().trim();
             
             logToConsole(`📍 Seleccionando: ${name} (${normalizedCode})`, 'debug');
+            
+            // 💾 Guardar país seleccionado
             selectedCountry = normalizedCode;
+            
+            // 🎨 Actualizar UI
             document.getElementById('node-label').innerText = `NODE: ${name.toUpperCase()}`;
             document.getElementById('back-button').style.display = 'block';
             
-            // Validar que lat/lng sean números
+            // 📍 Validar coordenadas
             const validLat = isNaN(lat) ? 0 : lat;
             const validLng = isNaN(lng) ? 0 : lng;
             
+            // 📷 Mover cámara a país seleccionado
             world.pointOfView({ lat: validLat, lng: validLng, altitude: 0.6 }, 1000);
-            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.25;
             
+            // ⚙️ Reducir velocidad de rotación cuando hay país seleccionado
+            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.05;
+            
+            // 📰 Cargar noticias del país
             loadNews(normalizedCode);
         }
 
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 📰 SECCIÓN 6: FUNCIONES DE NOTICIAS                                */
+        /* ════════════════════════════════════════════════════════════════════ */
 
-function loadNews(code) {
-    const container = document.getElementById('news-container');
-    
-    // Validar código ANTES de usarlo
-    if (!code || code === 'undefined' || code === '' || code === null) {
-        logToConsole(`❌ Intento de cargar noticias con código inválido: "${code}"`, 'error');
-        container.innerHTML = `
-            <div class="error-box">
-                <strong>❌ CÓDIGO INVÁLIDO</strong><br>
-                Por favor, selecciona un país válido.<br>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
-    logToConsole(`Solicitando noticias para: ${code}`, 'info');
-    
-    // Construir URL con validación
-    const encodedCode = encodeURIComponent(code);
-    const newsUrl = `/country-news?code=${encodedCode}`;
-    
-    logToConsole(`📨 Endpoint: ${newsUrl}`, 'debug');
-    
-    fetch(newsUrl)
-        .then(res => {
-            logToConsole(`Status HTTP: ${res.status}`, 'debug');
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            // Verificar si hay error en la respuesta
-            if (data.status === 'error') {
-                logToConsole(`❌ ${data.type}: ${data.message}`, 'error');
-                container.innerHTML = `
-                    <div class="error-box">
-                        <strong>❌ ${data.type}</strong><br>
-                        ${data.message}<br>
-                        <small>${data.details || ''}</small><br>
-                        <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
-                    </div>
-                `;
-                return;
-            }
-
-            if (data.status === 'warning' || !data.articles || data.articles.length === 0) {
-                logToConsole(`⚠️ Sin artículos para ${code}`, 'warning');
-                container.innerHTML = `
-                    <div class="error-box">
-                        <strong>⚠️ SIN RESULTADOS</strong><br>
-                        ${data.message}<br>
-                        <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
-                    </div>
-                `;
-                return;
-            }
-
-            logToConsole(`✅ ${data.articles.length} artículos cargados para ${code}`, 'success');
+        /**
+         * 📥 Carga noticias para un país específico desde la API
+         * @param {string} code - Código ISO del país
+         */
+        function loadNews(code) {
+            const container = document.getElementById('news-container');
             
-            container.innerHTML = '';
-            data.articles.forEach((art, idx) => {
-                const div = document.createElement('div');
-                div.className = 'news-item';
-                div.innerHTML = `> ${art.title}`;
-                div.onclick = () => openReader(art);
-                container.appendChild(div);
-            });
-        })
-        .catch(err => {
-            logToConsole(`🔌 Error de conexión: ${err.message}`, 'error');
-            container.innerHTML = `
-                <div class="error-box">
-                    <strong>❌ ERROR</strong><br>
-                    ${err.message}<br>
-                    <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
-                </div>
-            `;
-        });
-}
+            // ✅ Validar código ANTES de hacer la solicitud
+            if (!code || code === 'undefined' || code === '' || code === null) {
+                logToConsole(`❌ Intento de cargar noticias con código inválido: "${code}"`, 'error');
+                container.innerHTML = `
+                    <div class="error-box">
+                        <strong>❌ CÓDIGO INVÁLIDO</strong><br>
+                        Por favor, selecciona un país válido.<br>
+                    </div>
+                `;
+                return;
+            }
+            
+            // ⏳ Mostrar estado de carga
+            container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
+            logToConsole(`Solicitando noticias para: ${code}`, 'info');
+            
+            // 🔗 Construir URL
+            const encodedCode = encodeURIComponent(code);
+            const newsUrl = `/country-news?country=${encodedCode}`;
+            
+            logToConsole(`📨 Endpoint: ${newsUrl}`, 'debug');
+            
+            // 📡 Hacer solicitud al servidor backend
+            fetch(newsUrl)
+                .then(res => {
+                    logToConsole(`Status HTTP: ${res.status}`, 'debug');
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    return res.json();
+                })
+                .then(data => {
+                    // ⚠️ Verificar si hay error en la respuesta del servidor
+                    if (data.status === 'error') {
+                        logToConsole(`❌ ${data.type}: ${data.message}`, 'error');
+                        container.innerHTML = `
+                            <div class="error-box">
+                                <strong>❌ ${data.type}</strong><br>
+                                ${data.message}<br>
+                                <small>${data.details || ''}</small><br>
+                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                            </div>
+                        `;
+                        return;
+                    }
 
+                    // 📰 Verificar si hay artículos
+                    if (data.status === 'warning' || !data.articles || data.articles.length === 0) {
+                        logToConsole(`⚠️ Sin artículos para ${code}`, 'warning');
+                        container.innerHTML = `
+                            <div class="error-box">
+                                <strong>⚠️ SIN RESULTADOS</strong><br>
+                                ${data.message}<br>
+                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // ✅ Éxito: mostrar artículos
+                    logToConsole(`✅ ${data.articles.length} artículos cargados para ${code}`, 'success');
+                    
+                    // 🎨 Limpiar y crear elementos de noticias
+                    container.innerHTML = '';
+                    data.articles.forEach((art, idx) => {
+                        const div = document.createElement('div');
+                        div.className = 'news-item';
+                        div.innerHTML = `> ${art.title}`;
+                        div.onclick = () => openReader(art);
+                        container.appendChild(div);
+                    });
+                })
+                .catch(err => {
+                    // ❌ Error de conexión
+                    logToConsole(`🔌 Error de conexión: ${err.message}`, 'error');
+                    container.innerHTML = `
+                        <div class="error-box">
+                            <strong>❌ ERROR</strong><br>
+                            ${err.message}<br>
+                            <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                        </div>
+                    `;
+                });
+        }
+
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 🎨 SECCIÓN 7: FUNCIONES DE INTERFAZ DE USUARIO                     */
+        /* ════════════════════════════════════════════════════════════════════ */
+
+        /**
+         * 📖 Abre el panel de lectura con el contenido completo de un artículo
+         * @param {object} article - Objeto del artículo
+         */
         function openReader(article) {
             const reader = document.getElementById('news-reader');
             const body = document.getElementById('reader-body');
+            
+            // 👁️ Mostrar panel
             reader.style.display = 'flex';
+            
+            // 📝 Cargar contenido del artículo
             body.innerHTML = `
                 <p><strong>ORIGEN:</strong> ${article.source.name || 'Unknown'}</p>
                 <p>> ${article.description || 'Sin resumen disponible.'}</p>
@@ -574,8 +834,16 @@ function loadNews(code) {
             `;
         }
 
-        function closeReader() { document.getElementById('news-reader').style.display = 'none'; }
+        /**
+         * 🚪 Cierra el panel de lectura
+         */
+        function closeReader() { 
+            document.getElementById('news-reader').style.display = 'none'; 
+        }
 
+        /**
+         * 🔄 Resetea la vista al globo global y carga noticias mundiales
+         */
         function resetToGlobal() {
             logToConsole('Reseteando a vista global', 'info');
             selectedCountry = null;
@@ -587,9 +855,16 @@ function loadNews(code) {
             loadNews('global');
         }
 
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 🚀 SECCIÓN 8: INICIALIZACIÓN DE LA APLICACIÓN                      */
+        /* ════════════════════════════════════════════════════════════════════ */
+
+        /**
+         * 🚀 Ejecuta al cargar la página completa
+         */
         window.onload = () => {
             logToConsole('Aplicación cargada', 'success');
-            resetToGlobal();
+            resetToGlobal(); // 🌍 Iniciar con vista global
         };
 
     </script>
