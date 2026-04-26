@@ -410,6 +410,10 @@ fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/wor
             container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
             logToConsole(`Solicitando noticias para: ${code}`, 'info');
             
+            if (!code || code === 'undefined') {
+                logToConsole('Código de país inválido', 'error');
+                return;
+            }
             fetch(`/country-news?code=${code}`)
                 .then(res => {
                     logToConsole(`Status: ${res.status}`, 'debug');
