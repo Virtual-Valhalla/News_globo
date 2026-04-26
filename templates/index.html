@@ -25,12 +25,19 @@
         /* ERROR CONSOLE PANEL (TOP) - NEW */
         /* ═══════════════════════════════════════ */
         .error-console {
-            position: fixed; top: 10px; left: 75%; transform: translateX(-75%);
-            width: 45vw; max-width: 45vw; max-height: 20vh;
+            position: fixed; top: 10px; 
+            left: 75%; transform: translateX(-75%);
+            width: 45vw; 
+            max-width: 88.5vw;
+            max-height: 20vh;
+
             border: 2px solid #00ffff; background: rgba(0, 0, 0, 0.7);
-            padding: 12px; z-index: 100; box-shadow: 0 0 20px #00ffff;
+            padding: 12px; box-shadow: 0 0 20px #00ffff;
             display: flex; flex-direction: column;
             border-radius: 4px;
+
+            left: 75%; transform: translateX(-75%);
+            z-index: 100; 
         }
 
         .console-header {
@@ -78,7 +85,7 @@
         .terminal-box {
             position: absolute; top: 20px; left: 20px; 
             width: 25vw; 
-            max-width: 25vw; /* NUEVO: Nunca será más ancha que el 90% de la pantalla */
+            max-width: 25vw; 
             height: 90vh; 
             /* ... el resto de tus estilos originales (border, background, etc) ... */
             border: 3px solid #ff00ff; background: rgba(0, 0, 0, 0.7);
@@ -89,11 +96,10 @@
         /* Consola de Lectura */
         .reader-box {
             position: absolute; bottom: 20px; right: 20px; 
-            width: 70vw; 
-            max-width: 70vw; /* NUEVO */
-            height: 40vh;
-            max-height: 40vh; /* NUEVO: Para que no tape todo si se abre en un móvil */
-            /* ... el resto de tus estilos originales ... */
+            width: 45vw; 
+            max-width: 45vw; /* NUEVO */
+            height: 30vh;
+
             border: 2px solid #00ff00; background: rgba(0, 20, 0, 0.9);
             padding: 15px; z-index: 20; box-shadow: 0 0 10px #00ff00;
             display: none; /* Oculta hasta que se selecciona una noticia */
@@ -142,32 +148,48 @@
     #globeViz {
         left: 0 !important;
         width: 100vw !important;
+        max-width: 100vw;
     }
 
     /* Movemos la terminal principal abajo y la hacemos horizontal */
     .terminal-box {
+        position: fixed;
         top: auto;
-        bottom: 10px;
-        left: 5vw;
-        width: 90vw;
-        height: 35vh; /* Ocupa solo el 35% inferior de la pantalla */
+        bottom: 0vw;
+        left: auto;
+        width: 100vw;
+        max-width: 88.5vw;
+        height: 20vh; 
+        max-height: 20vh; 
         z-index: 10;
     }
 
     /* Ajustamos la caja del lector de noticias */
     .reader-box {
-        bottom: 38vh; /* Se coloca justo encima de la terminal */
-        right: 5vw;
-        width: 90vw;
+        bottom: 25vh; 
+        left: auto;
+        width: 100vw;
+        max-width: 80vw;
+        height: 40vh; /* Ocupa solo el 35% inferior de la pantalla */
+        max-height: 40vh; /* Ocupa solo el 35% inferior de la pantalla */
         z-index: 20;
     }
 
     /* Centramos la consola de errores en la parte superior */
     .error-console {
-        left: 50%;
-        transform: translateX(-50%);
-        width: 95vw;
-    }
+        position: fixed;
+        top: auto;
+        left: auto;
+        width: 100vw;
+        max-width: 93vw;
+        max-height: 20vh; 
+        z-index: 10;
+            border: 2px solid #00ffff; background: rgba(0, 0, 0, 0.7);
+            padding: 12px; box-shadow: 0 0 20px #00ffff;
+            display: flex; flex-direction: column;
+            border-radius: 4px;
+        left: 25%; transform: translateX(-25%);
+        }
 }
     </style>
 </head>
@@ -195,7 +217,7 @@
 
     <!-- TERMINAL PRINCIPAL -->
     <div class="terminal-box">
-        <h2>SYSTEM_TERMINAL_V.1</h2>
+        <h2>NEWS_TERMINAL_V.1</h2>
         <div class="status-line">STATUS: <span class="active">ACTIVE</span></div>
         <div id="node-label" class="node-info">NODE: GLOBAL FEED</div>
         <button id="back-button" class="back-btn" onclick="resetToGlobal()">> RESET_CAMERA</button>

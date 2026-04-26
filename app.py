@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-NEWS_API_KEY = 'apui'
+NEWS_API_KEY = 'dfsdfsdf'
 
 @app.route("/")
 def index():
