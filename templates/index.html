@@ -331,6 +331,26 @@
                 world.polygonAltitude(world.polygonAltitude());
             })
 
+.onPolygonClick((polygon, event, { lat, lng }) => {
+    logToConsole(`🖱️ Polígono clickeado. Inspeccionando propiedades...`, 'debug');
+    
+    const d = polygon.properties;
+    console.log("📋 Propiedades del polígono:", d); // Para inspeccionar en DevTools
+    logToConsole(`📋 Propiedades: ${JSON.stringify(Object.keys(d))}`, 'debug');
+    
+    // Intentar múltiples combinaciones de nombres de propiedades
+    const name = d.ADMIN || d.name || d.NAME || d.properties?.ADMIN || 'Unknown Country';
+    const code = d.ISO_A2 || d.iso_a2 || d.code || d.CODE || null;
+    
+    if (!code) {
+        logToConsole(`❌ No se encontró código ISO para: ${name}. Propiedades: ${JSON.stringify(d)}`, 'error');
+        console.error("Propiedades completas del GeoJSON:", d);
+        return;
+    }
+    
+    selectNode(name, code.toLowerCase(), lat, lng);
+})
+/*
             .onPolygonClick((polygon, event, { lat, lng }) => {
                 const d = polygon.properties;
                 const name = d.ADMIN;
@@ -338,7 +358,7 @@
 
                 selectNode(name, code, lat, lng);
             })
-            
+*/            
             .onPointClick(pt => {
                 // Caso especial para Bermuda clickada como punto
                 selectNode(pt.name, pt.id, pt.lat, pt.lng);
@@ -364,111 +384,184 @@
         world.scene().rotation.z = tiltAng; 
         world.scene().rotation.x = 0.1;
 
+
         // Cargar GeoJSON y procesar Bermuda
         logToConsole('Cargando GeoJSON...', 'info');
-fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
+        
+        // Usar un GeoJSON que tenga códigos ISO correctamente
+        fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_0_countries.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('No se pudo cargar GeoJSON');
                 return res.json();
             })
             
             .then(countries => {
-
                 if (!countries || !countries.features) {
+                    logToConsole('GeoJSON inválido', 'error');
                     console.error("GeoJSON inválido:", countries);
                     return;
                 }
 
-                const cleanFeatures = countries.features.filter(f => 
-                    f &&
-                    f.geometry &&
-                    f.geometry.type &&
-                    f.properties
-                );
+                // 🔧 PROCESAR Y VALIDAR FEATURES
+                const cleanFeatures = countries.features.map(f => {
+                    if (!f || !f.geometry || !f.properties) return null;
+                    
+                    // Normalizar propiedades a un estándar
+                    const props = f.properties;
+                    const normalized = {
+                        ...props,
+                        // Asegurar que tenemos un nombre
+                        ADMIN: props.ADMIN || props.NAME || props.name || 'Unknown',
+                        // Asegurar que tenemos código ISO
+                        ISO_A2: props.ISO_A2 || props.iso_a2 || props.code || 'XX'
+                    };
+                    
+                    return {
+                        ...f,
+                        properties: normalized
+                    };
+                }).filter(f => {
+                    if (!f) return false;
+                    const props = f.properties;
+                    
+                    // Validar que tenga nombre y código válido
+                    const hasValidName = props.ADMIN && props.ADMIN !== 'Unknown';
+                    const hasValidCode = props.ISO_A2 && props.ISO_A2 !== 'XX' && props.ISO_A2.length === 2;
+                    
+                    if (!hasValidName || !hasValidCode) {
+                        logToConsole(`⚠️ Feature descartado: ${props.ADMIN || 'Unknown'} - Code: ${props.ISO_A2 || 'XX'}`, 'debug');
+                        return false;
+                    }
+                    
+                    return true;
+                });
 
+                if (cleanFeatures.length === 0) {
+                    logToConsole('❌ No se encontraron países válidos en el GeoJSON', 'error');
+                    return;
+                }
+
+                logToConsole(`✅ ${cleanFeatures.length} países cargados correctamente`, 'success');
+                console.log('📋 Primeros 3 países:', cleanFeatures.slice(0, 3).map(f => ({ name: f.properties.ADMIN, code: f.properties.ISO_A2 })));
+                
                 world.polygonsData(cleanFeatures);
             })
 
             .catch(err => {
-                logToConsole('Error cargando GeoJSON', 'error', err.message);
+                logToConsole(`Error cargando GeoJSON: ${err.message}`, 'error');
+                console.error('GeoJSON Error:', err);
             });
 
         function selectNode(name, code, lat, lng) {
-            logToConsole(`📍 Seleccionando: ${name} (${code})`, 'debug');
-            selectedCountry = code;
-            document.getElementById('node-label').innerText = `NODE: ${name}`;
-            document.getElementById('back-button').style.display = 'block';
-            
-            world.pointOfView({ lat, lng, altitude: 0.6 }, 1000);
-            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.25;
-            
-            loadNews(code);
-        }
-
-        function loadNews(code) {
-            const container = document.getElementById('news-container');
-            container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
-            logToConsole(`Solicitando noticias para: ${code}`, 'info');
-            
-            if (!code || code === 'undefined') {
-                logToConsole('Código de país inválido', 'error');
+            // Validaciones robustas
+            if (!code || code === 'undefined' || code === '' || code === null) {
+                logToConsole(`❌ Código de país inválido (${code})`, 'error');
                 return;
             }
-            fetch(`/country-news?code=${code}`)
-                .then(res => {
-                    logToConsole(`Status: ${res.status}`, 'debug');
-                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    // Verificar si hay error en la respuesta
-                    if (data.status === 'error') {
-                        logToConsole(data.message, 'error', data.details || '');
-                        container.innerHTML = `
-                            <div class="error-box">
-                                <strong>❌ ${data.type}</strong><br>
-                                ${data.message}<br>
-                                <small>${data.details || ''}</small><br>
-                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    if (data.status === 'warning' || !data.articles || data.articles.length === 0) {
-                        logToConsole(`⚠️ Sin artículos para ${code}`, 'warning');
-                        container.innerHTML = `
-                            <div class="error-box">
-                                <strong>⚠️ SIN RESULTADOS</strong><br>
-                                ${data.message}<br>
-                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    logToConsole(`✅ ${data.articles.length} artículos cargados`, 'success');
-                    
-                    container.innerHTML = '';
-                    data.articles.forEach(art => {
-                        const div = document.createElement('div');
-                        div.className = 'news-item';
-                        div.innerHTML = `> ${art.title}`;
-                        div.onclick = () => openReader(art);
-                        container.appendChild(div);
-                    });
-                })
-                .catch(err => {
-                    logToConsole('Error de conexión', 'error', err.message);
-                    container.innerHTML = `
-                        <div class="error-box">
-                            <strong>❌ ERROR</strong><br>
-                            ${err.message}<br>
-                            <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
-                        </div>
-                    `;
-                });
+            
+            if (!name || name === 'undefined' || name === '') {
+                logToConsole(`❌ Nombre de país inválido (${name})`, 'error');
+                return;
+            }
+            
+            // Normalizar código a minúsculas (NewsAPI usa minúsculas)
+            const normalizedCode = String(code).toLowerCase().trim();
+            
+            logToConsole(`📍 Seleccionando: ${name} (${normalizedCode})`, 'debug');
+            selectedCountry = normalizedCode;
+            document.getElementById('node-label').innerText = `NODE: ${name.toUpperCase()}`;
+            document.getElementById('back-button').style.display = 'block';
+            
+            // Validar que lat/lng sean números
+            const validLat = isNaN(lat) ? 0 : lat;
+            const validLng = isNaN(lng) ? 0 : lng;
+            
+            world.pointOfView({ lat: validLat, lng: validLng, altitude: 0.6 }, 1000);
+            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.25;
+            
+            loadNews(normalizedCode);
         }
+
+
+function loadNews(code) {
+    const container = document.getElementById('news-container');
+    
+    // Validar código ANTES de usarlo
+    if (!code || code === 'undefined' || code === '' || code === null) {
+        logToConsole(`❌ Intento de cargar noticias con código inválido: "${code}"`, 'error');
+        container.innerHTML = `
+            <div class="error-box">
+                <strong>❌ CÓDIGO INVÁLIDO</strong><br>
+                Por favor, selecciona un país válido.<br>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
+    logToConsole(`Solicitando noticias para: ${code}`, 'info');
+    
+    // Construir URL con validación
+    const encodedCode = encodeURIComponent(code);
+    const newsUrl = `/country-news?code=${encodedCode}`;
+    
+    logToConsole(`📨 Endpoint: ${newsUrl}`, 'debug');
+    
+    fetch(newsUrl)
+        .then(res => {
+            logToConsole(`Status HTTP: ${res.status}`, 'debug');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            // Verificar si hay error en la respuesta
+            if (data.status === 'error') {
+                logToConsole(`❌ ${data.type}: ${data.message}`, 'error');
+                container.innerHTML = `
+                    <div class="error-box">
+                        <strong>❌ ${data.type}</strong><br>
+                        ${data.message}<br>
+                        <small>${data.details || ''}</small><br>
+                        <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (data.status === 'warning' || !data.articles || data.articles.length === 0) {
+                logToConsole(`⚠️ Sin artículos para ${code}`, 'warning');
+                container.innerHTML = `
+                    <div class="error-box">
+                        <strong>⚠️ SIN RESULTADOS</strong><br>
+                        ${data.message}<br>
+                        <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                    </div>
+                `;
+                return;
+            }
+
+            logToConsole(`✅ ${data.articles.length} artículos cargados para ${code}`, 'success');
+            
+            container.innerHTML = '';
+            data.articles.forEach((art, idx) => {
+                const div = document.createElement('div');
+                div.className = 'news-item';
+                div.innerHTML = `> ${art.title}`;
+                div.onclick = () => openReader(art);
+                container.appendChild(div);
+            });
+        })
+        .catch(err => {
+            logToConsole(`🔌 Error de conexión: ${err.message}`, 'error');
+            container.innerHTML = `
+                <div class="error-box">
+                    <strong>❌ ERROR</strong><br>
+                    ${err.message}<br>
+                    <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                </div>
+            `;
+        });
+}
 
         function openReader(article) {
             const reader = document.getElementById('news-reader');
