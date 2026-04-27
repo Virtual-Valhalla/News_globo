@@ -69,7 +69,7 @@
         let world;                              // 🌍 Instancia del globo 3D
         let hoverD = null;                      // 🖱️ Polígono bajo el ratón
         let selectedCountry = null;             // 🗺️ Código del país seleccionado
-        const BASE_ROTATION_SPEED = 1.0;        // ⚙️ Velocidad de rotación automática
+        const BASE_ROTATION_SPEED = 0.5;        // ⚙️ Velocidad de rotación automática
         let isConsoleCollapsed = false;         // 📋 Estado de la consola
 
         /* ════════════════════════════════════════════════════════════════════ */
@@ -169,7 +169,6 @@
             .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
             // ⭐ Imagen del cielo/espacio
             .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
-
             // 🎨 Colores y propiedades de los polígonos (países)
             .polygonSideColor(() => 'rgba(255, 0, 255, 0.2)')
             .polygonStrokeColor(() => '#ff00ff')
@@ -312,7 +311,7 @@
             world.pointOfView({ lat: validLat, lng: validLng, altitude: 0.6 }, 1000);
             
             // ⚙️ Reducir velocidad de rotación cuando hay país seleccionado
-            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.05;
+            world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.1;
             
             // 📰 Cargar noticias del país
             loadNews(normalizedCode);
