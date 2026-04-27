@@ -1,0 +1,442 @@
+/* ════════════════════════════════════════════════════════════════════ */
+/* 🔧 SECCIÓN 1: VARIABLES GLOBALES Y CONFIGURACIÓN                    */
+/* ════════════════════════════════════════════════════════════════════ */
+
+let world;                              // 🌍 Instancia del globo 3D
+let hoverD = null;                      // 🖱️ Polígono bajo el ratón
+let selectedCountry = null;             // 🗺️ Código del país seleccionado
+const BASE_ROTATION_SPEED = 0.5;        // ⚙️ Velocidad de rotación automática
+let isConsoleCollapsed = false;         // 📋 Estado de la consola
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* 📋 SECCIÓN 2: SISTEMA DE CONSOLA DE ERRORES                        */
+/* ════════════════════════════════════════════════════════════════════ */
+
+/**
+* ⏰ Genera un timestamp formateado (HH:MM:SS)
+* @returns {string} Timestamp en formato HH:MM:SS
+*/
+function getTimeStamp() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+}
+
+/**
+* 📝 Registra un mensaje en la consola visual
+* @param {string} message - Texto del mensaje
+* @param {string} type - Tipo: 'error', 'warning', 'success', 'info', 'debug'
+* @param {string} details - Detalles adicionales (opcional)
+*/
+function logToConsole(message, type = 'info', details = '') {
+    const timestamp = getTimeStamp();
+    
+            // 🎯 Mapa de tipos con iconos, etiquetas y clases CSS
+    const typeMap = {
+        'error': { icon: '🔴', label: 'ERROR', class: 'msg-error' },
+        'warning': { icon: '🟡', label: 'WARNING', class: 'msg-warning' },
+        'success': { icon: '🟢', label: 'SUCCESS', class: 'msg-success' },
+        'info': { icon: '🔵', label: 'INFO', class: 'msg-info' },
+        'debug': { icon: '⚫', label: 'DEBUG', class: 'msg-debug' }
+    };
+
+            // 📌 Obtener información del tipo, usar 'info' por defecto
+    const typeInfo = typeMap[type] || typeMap['info'];
+    
+            // 🖥️ Registrar en la consola del navegador
+    console.log(`[${timestamp}] ${typeInfo.icon} ${typeInfo.label}: ${message}`, details);
+
+            // 🎨 Crear elemento visual para el mensaje
+    const msgEl = document.createElement('div');
+    msgEl.className = `console-message ${typeInfo.class}`;
+    msgEl.innerHTML = `
+                <span class="console-time">[${timestamp}]</span>
+                <span class="console-type">${typeInfo.icon} ${typeInfo.label}</span>
+                <span>${message}</span>
+    `;
+
+            // ➕ Agregar mensaje a la consola
+    const consoleContent = document.getElementById('console-content');
+    consoleContent.appendChild(msgEl);
+
+            // 🔄 Limitar a 50 mensajes (eliminar primero si se excede)
+    const messages = consoleContent.querySelectorAll('.console-message');
+    if (messages.length > 50) {
+        messages[0].remove();
+    }
+
+            // 📍 Auto-scroll al final
+    consoleContent.scrollTop = consoleContent.scrollHeight;
+}
+
+/**
+* 🗑️ Limpia todos los mensajes de la consola
+*/
+function clearConsole() {
+    const consoleContent = document.getElementById('console-content');
+    consoleContent.innerHTML = '';
+    logToConsole('Consola limpiada', 'info');
+}
+
+/**
+* 🔽 Alterna entre contraer y expandir la consola
+*/
+function toggleConsole() {
+    const console = document.getElementById('error-console');
+    const btn = document.getElementById('collapse-btn');
+    isConsoleCollapsed = !isConsoleCollapsed;
+    
+    if (isConsoleCollapsed) {
+        console.classList.add('console-collapsed');
+        btn.textContent = '+';
+    } else {
+        console.classList.remove('console-collapsed');
+        btn.textContent = '−';
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* 🌍 SECCIÓN 3: INICIALIZACIÓN DEL GLOBO 3D                          */
+/* ════════════════════════════════════════════════════════════════════ */
+
+// 🌎 Crear instancia del globo 3D
+world = Globe()
+(document.getElementById('globeViz'))
+            // 🌙 Imagen de la tierra (noche)
+.globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+            // ⭐ Imagen del cielo/espacio
+.backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+            // 🎨 Colores y propiedades de los polígonos (países)
+.polygonSideColor(() => 'rgba(255, 0, 255, 0.2)')
+.polygonStrokeColor(() => '#ff00ff')
+            // ✨ Color más brillante al pasar el ratón
+.polygonCapColor(d => d === hoverD ? 'rgba(0, 255, 255, 0.3)' : 'rgba(0, 255, 255, 0.00)')
+            // 📈 Altura más elevada al pasar el ratón
+.polygonAltitude(d => d === hoverD ? 0.05 : 0.00175)
+
+            // 📍 Configurar puntos para territorios pequeños
+.pointColor(() => '#ff00ff')
+.pointAltitude(0.07)
+.pointRadius(0.5)
+.pointsMerge(true)
+
+            // 🖱️ Evento: al pasar el ratón sobre un polígono
+.onPolygonHover(poly => {
+    hoverD = poly;
+    world.polygonAltitude(world.polygonAltitude());
+})
+
+            // 🖱️ Evento: al hacer clic en un polígono
+.onPolygonClick((polygon, event, { lat, lng }) => {
+    logToConsole(`🖱️ Polígono clickeado. Inspeccionando propiedades...`, 'debug');
+
+    const d = polygon.properties;
+    console.log("📋 Propiedades del polígono:", d);
+
+                // 🔍 Intentar múltiples variaciones de nombres de propiedades
+    const name = d.ADMIN || d.name || d.NAME || 'Unknown Country';
+    const code = d.ISO_A2 || d.iso_a2 || d.code || d.CODE || null;
+
+                // ✅ Validar que tenemos un código válido
+    if (!code) {
+        logToConsole(`❌ No se encontró código ISO para: ${name}`, 'error');
+        return;
+    }
+
+    selectNode(name, code.toLowerCase(), lat, lng);
+})
+
+            // 🖱️ Evento: al hacer clic en un punto (territorio pequeño)
+.onPointClick(pt => {
+    selectNode(pt.name, pt.id, pt.lat, pt.lng);
+})
+
+            // 🖱️ Evento: al hacer clic en el globo (sin país seleccionado)
+.onGlobeClick(() => { if (selectedCountry) resetToGlobal(); });
+
+        // 📏 Ajustar tamaño del globo al redimensionar la ventana
+window.addEventListener('resize', (event) => {
+    const globeContainer = document.getElementById('globeViz');
+    world.width(globeContainer.clientWidth);
+    world.height(globeContainer.clientHeight);
+});
+
+// 🔄 Activar rotación automática del globo
+world.controls().autoRotate = true;
+world.controls().autoRotateSpeed = BASE_ROTATION_SPEED;
+
+// 📐 Inclinar el globo para efecto cinemático
+const tiltAng = 0.05;  // 📊 Radianes (~3 grados)
+world.scene().rotation.z = tiltAng;  // 🔄 Ladeo lateral
+world.scene().rotation.x = 0.1;      // 🔄 Inclinación frontal
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* 📥 SECCIÓN 4: CARGA DE DATOS GEOGRÁFICOS (GeoJSON)                 */
+/* ════════════════════════════════════════════════════════════════════ */
+
+logToConsole('Cargando GeoJSON...', 'info');
+
+        // 📥 Descargar datos de países desde GeoJSON
+fetch('https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs/heads/master/110m/cultural/ne_110m_admin_0_countries_lakes.json')
+.then(res => {
+    if (!res.ok) throw new Error('No se pudo cargar GeoJSON');
+    return res.json();
+})
+
+.then(countries => {
+                // ✅ Validar estructura del GeoJSON
+                // 🔧 PROCESAR Y VALIDAR FEATURES
+
+    const cleanFeatures = countries.features
+                // 📊 Verificar que se cargaron países válidos
+    if (cleanFeatures.length === 0) {
+        logToConsole('❌ No se encontraron países válidos en el GeoJSON', 'error');
+        return;
+    }
+
+    logToConsole(`✅ ${cleanFeatures.length} países cargados correctamente`, 'success');
+
+                // 🌍 Cargar datos en el globo
+    world.polygonsData(cleanFeatures);
+})
+
+.catch(err => {
+    logToConsole(`Error cargando GeoJSON: ${err.message}`, 'error');
+    console.error('GeoJSON Error:', err);
+});
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* 🗺️ SECCIÓN 5: FUNCIONES DE INTERACCIÓN CON PAÍSES                  */
+/* ════════════════════════════════════════════════════════════════════ */
+
+        /**
+         * 🗺️ Selecciona un país y carga sus noticias
+         * @param {string} name - Nombre del país
+         * @param {string} code - Código ISO del país
+         * @param {number} lat - Latitud del centro del país
+         * @param {number} lng - Longitud del centro del país
+         */
+function selectNode(name, code, lat, lng) {
+            // ✅ Validaciones robustas
+    if (!code || code === 'undefined' || code === '' || code === null) {
+        logToConsole(`❌ Código de país inválido (${code})`, 'error');
+        return;
+    }
+    
+    if (!name || name === 'undefined' || name === '') {
+        logToConsole(`❌ Nombre de país inválido (${name})`, 'error');
+        return;
+    }
+    
+// 🔤 Normalizar código a minúsculas (NewsAPI usa minúsculas)
+    const normalizedCode = String(code).toLowerCase().trim();
+    
+    logToConsole(`📍 Seleccionando: ${name} (${normalizedCode})`, 'debug');
+    
+            // 💾 Guardar país seleccionado
+    selectedCountry = normalizedCode;
+    
+            // 🎨 Actualizar UI
+    document.getElementById('node-label').innerText = `NODE: ${name.toUpperCase()}`;
+    document.getElementById('back-button').style.display = 'block';
+    
+            // 📍 Validar coordenadas
+    const validLat = isNaN(lat) ? 0 : lat;
+    const validLng = isNaN(lng) ? 0 : lng;
+    
+            // 📷 Mover cámara a país seleccionado
+    world.pointOfView({ lat: validLat, lng: validLng, altitude: 0.6 }, 1000);
+    
+            // ⚙️ Reducir velocidad de rotación cuando hay país seleccionado
+    world.controls().autoRotateSpeed = BASE_ROTATION_SPEED * 0.1;
+    
+            // 📰 Cargar noticias del país
+    loadNews(normalizedCode);
+}
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* 📰 SECCIÓN 6: FUNCIONES DE NOTICIAS                                */
+/* ════════════════════════════════════════════════════════════════════ */
+
+        /**
+         * 📥 Carga noticias para un país específico desde la API
+         * @param {string} code - Código ISO del país
+         */
+function loadNews(code) {
+    const container = document.getElementById('news-container');
+    
+            // ✅ Validar código ANTES de hacer la solicitud
+    if (!code || code === 'undefined' || code === '' || code === null) {
+        logToConsole(`❌ Intento de cargar noticias con código inválido: "${code}"`, 'error');
+        container.innerHTML = `
+                    <div class="error-box">
+                        <strong>❌ CÓDIGO INVÁLIDO</strong><br>
+                        Por favor, selecciona un país válido.<br>
+                    </div>
+        `;
+        return;
+    }
+    
+            // ⏳ Mostrar estado de carga
+    container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
+    logToConsole(`Solicitando noticias para: ${code}`, 'info');
+    
+            // 🔗 Construir URL
+    const encodedCode = encodeURIComponent(code);
+    const newsUrl = `/country-news?country=${encodedCode}`;
+    
+    logToConsole(`📨 Endpoint: ${newsUrl}`, 'debug');
+    
+            // 📡 Hacer solicitud al servidor backend
+    fetch(newsUrl)
+    .then(res => {
+        logToConsole(`Status HTTP: ${res.status}`, 'debug');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    })
+    .then(data => {
+                    // ⚠️ Verificar si hay error en la respuesta del servidor
+        if (data.status === 'error') {
+            logToConsole(`❌ ${data.type}: ${data.message}`, 'error');
+            container.innerHTML = `
+                            <div class="error-box">
+                                <strong>❌ ${data.type}</strong><br>
+                                ${data.message}<br>
+                                <small>${data.details || ''}</small><br>
+                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                            </div>
+            `;
+            return;
+        }
+
+                    // 📰 Verificar si hay artículos
+        if (data.status === 'warning' || !data.articles || data.articles.length === 0) {
+            logToConsole(`⚠️ Sin artículos para ${code}`, 'warning');
+            container.innerHTML = `
+                            <div class="error-box">
+                                <strong>⚠️ SIN RESULTADOS</strong><br>
+                                ${data.message}<br>
+                                <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                            </div>
+            `;
+            return;
+        }
+
+                    // ✅ Éxito: mostrar artículos
+        logToConsole(`✅ ${data.articles.length} artículos cargados para ${code}`, 'success');
+
+                    // 🎨 Limpiar y crear elementos de noticias
+        container.innerHTML = '';
+        data.articles.forEach((art, idx) => {
+            const div = document.createElement('div');
+            div.className = 'news-item';
+            div.innerHTML = `> ${art.title}`;
+                        div.onclick = () => openReader(art); // 🖱️ Abrir panel de lectura al hacer clic
+                        // div.onclick = () => loadArticle(art.url); // NUEVO
+                        container.appendChild(div);
+                    });
+    })
+    .catch(err => {
+                    // ❌ Error de conexión
+        logToConsole(`🔌 Error de conexión: ${err.message}`, 'error');
+        container.innerHTML = `
+                        <div class="error-box">
+                            <strong>❌ ERROR</strong><br>
+                            ${err.message}<br>
+                            <button class="retry-btn" onclick="loadNews('${code}')">↻ REINTENTAR</button>
+                        </div>
+        `;
+    });
+}
+
+        // ════════════════════════════════════════════════════════════════════
+        // 🎨 SECCIÓN 7: FUNCIONES DE INTERFAZ DE USUARIO PANEL DE LECTURA     
+        // ════════════════════════════════════════════════════════════════════ 
+
+        /**
+         * 📖 Abre el panel de lectura con el contenido completo de un artículo
+         * @param {object} article - Objeto del artículo
+         */
+function openReader(article) {
+    const reader = document.getElementById('news-reader');
+    const body = document.getElementById('reader-body');
+    
+            // 👁️ Mostrar panel
+    reader.style.display = 'flex';
+    
+            // 📝 Cargar contenido del artículo
+    body.innerHTML = `
+                <p><strong>ORIGEN:</strong> ${article.source.name || 'Unknown'}</p>
+                <p>> ${article.description || 'Sin resumen disponible.'}</p>
+                <a href="${article.url}" target="_blank" class="news-link">ACCEDER_A_FUENTE_EXTERNA ></a>
+    `;
+}
+
+        /**
+         * 🚪 Cierra el panel de lectura
+         */
+function closeReader() { 
+    document.getElementById('news-reader').style.display = 'none'; 
+}
+
+// =======================================
+// FUNCION: cargar articulo en visor
+// =======================================
+function loadArticle(url) {
+
+    const viewer = document.getElementById("articleViewer");
+
+    // Mostrar visor + loading
+    viewer.style.display = "block";
+    viewer.innerHTML = "Cargando artículo...";
+
+    // Llamada a Flask
+    fetch(`/article?url=${encodeURIComponent(url)}`)
+    .then(res => res.json())
+    .then(data => {
+
+            // Renderizamos contenido
+        viewer.innerHTML = `
+                <h2 style="color:#00ffff;">${data.title}</h2>
+                <hr>
+                <p style="white-space: pre-line;">
+                    ${data.content}
+                </p>
+
+                <br>
+                <a href="${url}" target="_blank" style="color:#ff00ff;">
+                    🔗 Ver original
+                </a>
+        `;
+    })
+    .catch(err => {
+        viewer.innerHTML = "Error cargando artículo";
+        console.error(err);
+    });
+}
+
+        /* ════════════════════════════════════════════════════════════════════ */
+        /* 🚀 SECCIÓN 8: INICIALIZACIÓN DE LA APLICACIÓN                      */
+        /* ════════════════════════════════════════════════════════════════════ */
+
+        /**
+         * � Resetea la vista al globo global y carga noticias mundiales
+         */
+function resetToGlobal() {
+    logToConsole('Reseteando a vista global', 'info');
+    selectedCountry = null;
+    closeReader();
+    document.getElementById('node-label').innerText = `NODE: GLOBAL FEED`;
+    document.getElementById('back-button').style.display = 'none';
+    world.pointOfView({ lat: 20, lng: 0, altitude: 1.5 }, 1000);
+    world.controls().autoRotateSpeed = BASE_ROTATION_SPEED;
+    loadNews('global');
+}
+
+        /**
+         * 🚀 Ejecuta al cargar la página completa
+         */
+window.onload = () => {
+    logToConsole('Aplicación cargada', 'success');
+            resetToGlobal(); // 🌍 Iniciar con vista global
+        };
+
