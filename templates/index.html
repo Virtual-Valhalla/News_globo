@@ -91,6 +91,7 @@
 ">
 </div>
     <script>
+        
         /* ════════════════════════════════════════════════════════════════════ */
         /* 🔧 SECCIÓN 1: VARIABLES GLOBALES Y CONFIGURACIÓN                    */
         /* ════════════════════════════════════════════════════════════════════ */
@@ -286,7 +287,7 @@
                     return;
                 }
 
-                logToConsole(`✅ países cargados correctamente`, 'success');
+                logToConsole(`✅ ${cleanFeatures.length} países cargados correctamente`, 'success');
                 
                 // 🌍 Cargar datos en el globo
                 world.polygonsData(cleanFeatures);
@@ -423,7 +424,8 @@
                         const div = document.createElement('div');
                         div.className = 'news-item';
                         div.innerHTML = `> ${art.title}`;
-                        div.onclick = () => openReader(art);
+                        div.onclick = () => openReader(art); // 🖱️ Abrir panel de lectura al hacer clic
+                        // div.onclick = () => loadArticle(art.url); // NUEVO
                         container.appendChild(div);
                     });
                 })
@@ -440,9 +442,9 @@
                 });
         }
 
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* 🎨 SECCIÓN 7: FUNCIONES DE INTERFAZ DE USUARIO                     */
-        /* ════════════════════════════════════════════════════════════════════ */
+        // ════════════════════════════════════════════════════════════════════
+        // 🎨 SECCIÓN 7: FUNCIONES DE INTERFAZ DE USUARIO PANEL DE LECTURA     
+        // ════════════════════════════════════════════════════════════════════ 
 
         /**
          * 📖 Abre el panel de lectura con el contenido completo de un artículo
@@ -470,8 +472,45 @@
             document.getElementById('news-reader').style.display = 'none'; 
         }
 
+
+// =======================================
+// FUNCION: cargar articulo en visor
+// =======================================
+function loadArticle(url) {
+
+    const viewer = document.getElementById("articleViewer");
+
+    // Mostrar visor + loading
+    viewer.style.display = "block";
+    viewer.innerHTML = "Cargando artículo...";
+
+    // Llamada a Flask
+    fetch(`/article?url=${encodeURIComponent(url)}`)
+        .then(res => res.json())
+        .then(data => {
+
+            // Renderizamos contenido
+            viewer.innerHTML = `
+                <h2 style="color:#00ffff;">${data.title}</h2>
+                <hr>
+                <p style="white-space: pre-line;">
+                    ${data.content}
+                </p>
+
+                <br>
+                <a href="${url}" target="_blank" style="color:#ff00ff;">
+                    🔗 Ver original
+                </a>
+            `;
+        })
+        .catch(err => {
+            viewer.innerHTML = "Error cargando artículo";
+            console.error(err);
+        });
+}
+
         /**
-         * 🔄 Resetea la vista al globo global y carga noticias mundiales
+         * � Resetea la vista al globo global y carga noticias mundiales
          */
         function resetToGlobal() {
             logToConsole('Reseteando a vista global', 'info');
@@ -496,6 +535,8 @@
             resetToGlobal(); // 🌍 Iniciar con vista global
         };
 
+
+    
     </script>
 </body>
 </html>
