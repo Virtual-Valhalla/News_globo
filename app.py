@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request
 import requests
 import logging
 from datetime import datetime
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -259,6 +260,51 @@ def reset_limits():
             for i, k in enumerate(API_KEYS)
         ]
     }), 200
+
+# ================================
+# FUNCION: extraer articulo limpio
+# ================================
+def extract_article(url):
+    try:
+        # Hacemos request a la web
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+        response = requests.get(url, headers=headers, timeout=5)
+
+        # Parseamos HTML
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Intentamos sacar título
+        title = soup.title.string if soup.title else "Sin título"
+
+        # Sacamos párrafos
+        paragraphs = soup.find_all("p")
+        content = "\n".join([p.get_text() for p in paragraphs])
+
+        return {
+            "title": title,
+            "content": content[:5000]  # limitamos para no romper UI
+        }
+
+    except Exception as e:
+        return {
+            "title": "Error",
+            "content": f"No se pudo cargar el artículo: {str(e)}"
+        }
+
+# ================================
+# ENDPOINT: /article
+# ================================
+@app.route("/article")
+def get_article():
+    url = request.args.get("url")
+
+    if not url:
+        return jsonify({"error": "Falta URL"})
+
+    data = extract_article(url)
+    return jsonify(data)
 
 if __name__ == "__main__":
     logger.info("🚀 Iniciando servidor News_globo en puerto 5000")
