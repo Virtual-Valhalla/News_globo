@@ -1,364 +1,412 @@
-    <style>
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* SECCIÓN 1: ESTILOS GLOBALES Y ESTRUCTURA BASE                       */
-        /* ════════════════════════════════════════════════════════════════════ */
-        
-        /* 🎨 Estilos del cuerpo: fondo negro, fuente monoespaciada (estilo terminal) */
-        body { 
-            margin: 0; 
-            background: #000;              /* Fondo negro */
-            color: #00ffff;                 /* Texto cian */
-            font-family: 'Courier New', Courier, monospace;  /* Fuente terminal */
-            overflow: hidden;               /* Sin scroll en la página */
-        }
-        
-        /* 🌍 Contenedor del globo: ocupa toda la pantalla */
-        #globeViz { 
-            position: absolute; 
-            top: 0px; 
-            left: 0px; 
-            width: 100vw; 
-            height: 100vh;
-            z-index: 1;                     /* Por debajo de los paneles */
-        }
+/* ════════════════════════════════════════════════════════════════════ */
+/* SECCIÓN 1: ESTILOS GLOBALES Y ESTRUCTURA BASE                       */
+/* ════════════════════════════════════════════════════════════════════ */
 
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* SECCIÓN 2: PANEL DE CONSOLA DE ERRORES (ESQUINA SUPERIOR CENTRAL)  */
-        /* ════════════════════════════════════════════════════════════════════ */
-        
-        /* 📋 Contenedor principal de la consola */
-        .error-console {
-            position: fixed; 
-            top: 10px; 
-            right: 10px; 
-/*
-            left: 50%; 
-            transform: translateX(-50%);    /* Centrado horizontalmente */
-*/
-            width: 45vw; 
-            max-width: 45vw;
-            max-height: 20vh;
-            border: 2px solid #00ffff;      /* Borde cian */
-            background: rgba(0, 0, 0, 0.7); /* Fondo semi-transparente */
-            padding: 12px; 
-            z-index: 100;                   /* Por encima de todo */
-            box-shadow: 0 0 20px #00ffff;   /* Brillo cian */
-            display: flex; 
-            flex-direction: column;
-            border-radius: 4px;
-        }
+/* 🎨 Estilos del cuerpo: fondo negro, fuente monoespaciada (estilo terminal) */
+body {
+    margin: 0;
+    background: #000;
+    /* Fondo negro */
+    color: #00ffff;
+    /* Texto cian */
+    font-family: 'Courier New', Courier, monospace;
+    /* Fuente terminal */
+    overflow: hidden;
+    /* Sin scroll en la página */
+}
 
-        /* 📌 Encabezado de la consola con título y botones */
-        .console-header {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            border-bottom: 2px solid #00ffff; 
-            padding-bottom: 8px; 
-            margin-bottom: 8px;
-            color: #00ffff; 
-            font-weight: bold; 
-            font-size: 0.8em;
-        }
+/* 🌍 Contenedor del globo: ocupa toda la pantalla */
+#globeViz {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    /* Por debajo de los paneles */
+}
 
-        /* 🔘 Contenedor de botones de la consola */
-        .console-buttons {
-            display: flex; 
-            gap: 6px;
-        }
+/* ════════════════════════════════════════════════════════════════════ */
+/* SECCIÓN 2: PANEL DE CONSOLA DE ERRORES (ESQUINA SUPERIOR CENTRAL)  */
+/* ════════════════════════════════════════════════════════════════════ */
 
-        /* ⚙️ Estilo de botones individuales */
-        .console-btn {
-            background: #00ffff; 
-            color: #000; 
-            border: none; 
-            padding: 4px 12px;
-            cursor: pointer; 
-            font-weight: bold; 
-            font-size: 0.7em;
-            border-radius: 3px; 
-            transition: 0.2s;              /* Animación suave */
-        }
+/* 📋 Contenedor principal de la consola */
+.error-console {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    /*
+    left: 50%; 
+    transform: translateX(-50%);    /* Centrado horizontalmente */
+    width: 45vw;
+    max-width: 45vw;
+    max-height: 20vh;
+    border: 2px solid #00ffff;
+    /* Borde cian */
+    background: rgba(0, 0, 0, 0.7);
+    /* Fondo semi-transparente */
+    padding: 12px;
+    z-index: 100;
+    /* Por encima de todo */
+    box-shadow: 0 0 20px #00ffff;
+    /* Brillo cian */
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+}
 
-        /* ✨ Efecto hover en botones */
-        .console-btn:hover { 
-            background: #ff00ff; 
-            box-shadow: 0 0 10px #ff00ff;   /* Brillo magenta */
-        }
+/* 📌 Encabezado de la consola con título y botones */
+.console-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #00ffff;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    color: #00ffff;
+    font-weight: bold;
+    font-size: 0.8em;
+}
 
-        /* 📜 Área de contenido de la consola con scroll */
-        .console-content {
-            flex-grow: 1; 
-            overflow-y: auto; 
-            font-size: 0.75em;
-            scrollbar-width: thin; 
-            scrollbar-color: #00ffff #000;
-            min-height: 30px; 
-            max-height: 140px;
-        }
+/* 🔘 Contenedor de botones de la consola */
+.console-buttons {
+    display: flex;
+    gap: 6px;
+}
 
-        /* 💬 Estilo individual de cada mensaje en la consola */
-        .console-message {
-            margin: 3px 0; 
-            padding: 4px 8px;
-            border-left: 3px solid;         /* Línea de color según tipo */
-            display: flex; 
-            align-items: flex-start; 
-            gap: 8px;
-        }
+/* ⚙️ Estilo de botones individuales */
+.console-btn {
+    background: #00ffff;
+    color: #000;
+    border: none;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.7em;
+    border-radius: 3px;
+    transition: 0.2s;
+    /* Animación suave */
+}
 
-        /* ⏰ Timestamp de cada mensaje */
-        .console-time { 
-            color: #888; 
-            font-weight: bold; 
-            min-width: 65px; 
-        }
+/* ✨ Efecto hover en botones */
+.console-btn:hover {
+    background: #ff00ff;
+    box-shadow: 0 0 10px #ff00ff;
+    /* Brillo magenta */
+}
 
-        /* 🏷️ Tipo/categoría del mensaje */
-        .console-type { 
-            min-width: 70px; 
-        }
+/* 📜 Área de contenido de la consola con scroll */
+.console-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    font-size: 0.75em;
+    scrollbar-width: thin;
+    scrollbar-color: #00ffff #000;
+    min-height: 30px;
+    max-height: 140px;
+}
 
-        /* 🎯 Estilos por tipo de mensaje */
-        .msg-error { border-left-color: #ff0000; color: #ff4444; }      /* Rojo */
-        .msg-warning { border-left-color: #ffff00; color: #ffff44; }    /* Amarillo */
-        .msg-success { border-left-color: #00ff00; color: #44ff44; }    /* Verde */
-        .msg-info { border-left-color: #00ffff; color: #44ffff; }       /* Cian */
-        .msg-debug { border-left-color: #888888; color: #aaaaaa; }      /* Gris */
+/* 💬 Estilo individual de cada mensaje en la consola */
+.console-message {
+    margin: 3px 0;
+    padding: 4px 8px;
+    border-left: 3px solid;
+    /* Línea de color según tipo */
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
 
-        /* 🔽 Oculta contenido cuando la consola está colapsada */
-        .console-collapsed .console-content { 
-            display: none; 
-        }
-        
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* SECCIÓN 3: TERMINAL PRINCIPAL (PANEL IZQUIERDO)                    */
-        /* ════════════════════════════════════════════════════════════════════ */
-        
-        /* 📱 Contenedor de la terminal principal con lista de noticias */
-        .terminal-box {
-            position: absolute; 
-            top: 20px; 
-            left: 20px; 
-            width: 25vw; 
-            max-width: 25vw; 
-            height: 90vh; 
-            border: 3px solid #ff00ff;      /* Borde magenta */
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px; 
-            z-index: 10; 
-            box-shadow: 0 0 15px #ff00ff;   /* Brillo magenta */
-            overflow-y: auto;               /* Scroll vertical */
-            scrollbar-width: thin; 
-            scrollbar-color: #ff00ff #000;
-        }
+/* ⏰ Timestamp de cada mensaje */
+.console-time {
+    color: #888;
+    font-weight: bold;
+    min-width: 65px;
+}
 
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* SECCIÓN 4: CONSOLA DE LECTURA (PANEL DERECHO INFERIOR)             */
-        /* ════════════════════════════════════════════════════════════════════ */
-        
-        /* 📄 Panel para mostrar el contenido completo de una noticia */
-        .reader-box {
-            position: absolute; 
-            bottom: 20px; 
-            right: 20px; 
-            width: 45vw; 
-            max-width: 45vw; 
-            height: 30vh;
-            border: 2px solid #00ff00;      /* Borde verde */
-            background: rgba(0, 20, 0, 0.9); /* Fondo verde oscuro */
-            padding: 15px; 
-            z-index: 20; 
-            box-shadow: 0 0 10px #00ff00;   /* Brillo verde */
-            display: none;                  /* Oculto por defecto */
-            flex-direction: column;
-        }
-        
-        /* 🏆 Encabezado del lector con título y botón de cerrar */
-        .reader-header { 
-            border-bottom: 1px solid #00ff00; 
-            padding-bottom: 5px; 
-            margin-bottom: 10px; 
-            display: flex; 
-            justify-content: space-between; 
-            font-weight: bold; 
-            color: #00ff00; 
-        }
-        
-        /* 📖 Área de contenido del lector */
-        .reader-content { 
-            font-size: 0.9em; 
-            color: #00ff00; 
-            overflow-y: auto; 
-            flex-grow: 1; 
-        }
-        
-        /* ❌ Botón de cerrar */
-        .close-btn { 
-            cursor: pointer; 
-            color: #ff0000; 
-        }
+/* 🏷️ Tipo/categoría del mensaje */
+.console-type {
+    min-width: 70px;
+}
 
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* SECCIÓN 5: ESTILOS DE TEXTO Y ELEMENTOS DE CONTENIDO               */
-        /* ════════════════════════════════════════════════════════════════════ */
-        
-        /* 📝 Títulos de sección */
-        h2 { 
-            color: #00ffff; 
-            border-bottom: 2px solid #00ffff; 
-            padding-bottom: 10px; 
-            margin-top: 0; 
-        }
-        
-        /* 📊 Líneas de estado */
-        .status-line { 
-            margin: 10px 0; 
-            font-weight: bold; 
-        }
-        
-        /* ✅ Texto de estado activo (verde) */
-        .active { 
-            color: #00ff00; 
-        }
-        
-        /* 🏷️ Información del nodo seleccionado */
-        .node-info { 
-            color: #ff00ff; 
-            margin-bottom: 20px; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-        }
+/* 🎯 Estilos por tipo de mensaje */
+.msg-error {
+    border-left-color: #ff0000;
+    color: #ff4444;
+}
+
+/* Rojo */
+.msg-warning {
+    border-left-color: #ffff00;
+    color: #ffff44;
+}
+
+/* Amarillo */
+.msg-success {
+    border-left-color: #00ff00;
+    color: #44ff44;
+}
+
+/* Verde */
+.msg-info {
+    border-left-color: #00ffff;
+    color: #44ffff;
+}
+
+/* Cian */
+.msg-debug {
+    border-left-color: #888888;
+    color: #aaaaaa;
+}
+
+/* Gris */
+
+/* 🔽 Oculta contenido cuando la consola está colapsada */
+.console-collapsed .console-content {
+    display: none;
+}
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* SECCIÓN 3: TERMINAL PRINCIPAL (PANEL IZQUIERDO)                    */
+/* ════════════════════════════════════════════════════════════════════ */
+
+/* 📱 Contenedor de la terminal principal con lista de noticias */
+.terminal-box {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 25vw;
+    max-width: 25vw;
+    height: 90vh;
+    border: 3px solid #ff00ff;
+    /* Borde magenta */
+    background: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    z-index: 10;
+    box-shadow: 0 0 15px #ff00ff;
+    /* Brillo magenta */
+    overflow-y: auto;
+    /* Scroll vertical */
+    scrollbar-width: thin;
+    scrollbar-color: #ff00ff #000;
+}
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* SECCIÓN 4: CONSOLA DE LECTURA (PANEL DERECHO INFERIOR)             */
+/* ════════════════════════════════════════════════════════════════════ */
+
+/* 📄 Panel para mostrar el contenido completo de una noticia */
+.reader-box {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 45vw;
+    max-width: 45vw;
+    height: 30vh;
+    border: 2px solid #00ff00;
+    /* Borde verde */
+    background: rgba(0, 20, 0, 0.9);
+    /* Fondo verde oscuro */
+    padding: 15px;
+    z-index: 20;
+    box-shadow: 0 0 10px #00ff00;
+    /* Brillo verde */
+    display: none;
+    /* Oculto por defecto */
+    flex-direction: column;
+}
+
+/* 🏆 Encabezado del lector con título y botón de cerrar */
+.reader-header {
+    border-bottom: 1px solid #00ff00;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    color: #00ff00;
+}
+
+/* 📖 Área de contenido del lector */
+.reader-content {
+    font-size: 0.9em;
+    color: #00ff00;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* ❌ Botón de cerrar */
+.close-btn {
+    cursor: pointer;
+    color: #ff0000;
+}
+
+/* ════════════════════════════════════════════════════════════════════ */
+/* SECCIÓN 5: ESTILOS DE TEXTO Y ELEMENTOS DE CONTENIDO               */
+/* ════════════════════════════════════════════════════════════════════ */
+
+/* 📝 Títulos de sección */
+h2 {
+    color: #00ffff;
+    border-bottom: 2px solid #00ffff;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+/* 📊 Líneas de estado */
+.status-line {
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+/* ✅ Texto de estado activo (verde) */
+.active {
+    color: #00ff00;
+}
+
+/* 🏷️ Información del nodo seleccionado */
+.node-info {
+    color: #ff00ff;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
 
         /* ═════════════════════════════════════════════════════════���══════════ */
         /* SECCIÓN 6: BOTONES E INTERACCIÓN                                   */
         /* ════════════════════════════════════════════════════════════════════ */
-        
+
         /* 🔙 Botón para resetear la cámara */
-        .back-btn {
-            display: none;                  /* Oculto hasta seleccionar un país */
-            background: #ff00ff; 
-            color: #000; 
-            padding: 8px 12px;
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-bottom: 15px; 
-            border: none; 
-            width: 100%; 
-            text-align: left;
-        }
+.back-btn {
+    display: none;
+    /* Oculto hasta seleccionar un país */
+    background: #ff00ff;
+    color: #000;
+    padding: 8px 12px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 15px;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
 
         /* ════════════════════════════════════════════════════════════════════ */
         /* SECCIÓN 7: ELEMENTOS DE NOTICIAS                                   */
         /* ════════════════════════════════════════════════════════════════════ */
-        
+
         /* 📰 Elemento individual de noticia */
-        .news-item {
-            margin-bottom: 20px; 
-            padding: 10px; 
-            border-left: 2px solid #00ffff;
-            background: rgba(0, 255, 255, 0.05);  /* Fondo cian muy tenue */
-            cursor: pointer; 
-            transition: 0.2s;
-        }
-        
-        /* 🖱️ Efecto hover en noticias */
-        .news-item:hover { 
-            background: rgba(255, 0, 255, 0.1);   /* Fondo magenta al pasar ratón */
-            border-left-color: #ff00ff; 
-        }
-        
-        /* 🔗 Enlace a fuente externa */
-        .news-link { 
-            color: #ff00ff; 
-            text-decoration: none; 
-            font-size: 0.8em; 
-            display: block; 
-            margin-top: 5px; 
-        }
+.news-item {
+    margin-bottom: 20px;
+    padding: 10px;
+    border-left: 2px solid #00ffff;
+    background: rgba(0, 255, 255, 0.05);
+    /* Fondo cian muy tenue */
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+/* 🖱️ Efecto hover en noticias */
+.news-item:hover {
+    background: rgba(255, 0, 255, 0.1);
+    /* Fondo magenta al pasar ratón */
+    border-left-color: #ff00ff;
+}
+
+/* 🔗 Enlace a fuente externa */
+.news-link {
+    color: #ff00ff;
+    text-decoration: none;
+    font-size: 0.8em;
+    display: block;
+    margin-top: 5px;
+}
 
         /* ════════════════════════════════════════════════════════════════════ */
         /* SECCIÓN 8: CAJAS DE ERROR Y BOTONES DE REINTENTO                   */
         /* ════════════════════════════════════════════════════════════════════ */
-        
+
         /* ⚠️ Contenedor para mostrar errores */
-        .error-box {
-            background: rgba(255, 0, 0, 0.1);     /* Fondo rojo tenue */
-            border: 1px solid #ff0000; 
-            padding: 10px; 
-            border-radius: 4px; 
-            margin: 10px 0; 
-            color: #ff4444;                       /* Rojo claro */
-        }
+.error-box {
+    background: rgba(255, 0, 0, 0.1);
+    /* Fondo rojo tenue */
+    border: 1px solid #ff0000;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    color: #ff4444;
+    /* Rojo claro */
+}
 
-        /* 🔄 Botón para reintentar operaciones */
-        .retry-btn {
-            background: #00ff00; 
-            color: #000; 
-            border: none; 
-            padding: 6px 12px;
-            cursor: pointer; 
-            font-weight: bold; 
-            margin-top: 8px; 
-            border-radius: 3px; 
-            transition: 0.2s;
-        }
+/* 🔄 Botón para reintentar operaciones */
+.retry-btn {
+    background: #00ff00;
+    color: #000;
+    border: none;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 8px;
+    border-radius: 3px;
+    transition: 0.2s;
+}
 
-        /* ✨ Efecto hover en botón reintento */
-        .retry-btn:hover { 
-            background: #ff00ff; 
-            box-shadow: 0 0 8px #ff00ff; 
-        }
+/* ✨ Efecto hover en botón reintento */
+.retry-btn:hover {
+    background: #ff00ff;
+    box-shadow: 0 0 8px #ff00ff;
+}
 
-        /* ════════════════════════════════════════════════════════════════════ */
-        /* SECCIÓN 9: DISEÑO RESPONSIVO (MÓVILES Y TABLETS)                   */
-        /* ════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════ */
+/* SECCIÓN 9: DISEÑO RESPONSIVO (MÓVILES Y TABLETS)                   */
+/* ════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* 📱 Globo ocupa pantalla completa en móvil */
+    #globeViz {
+        left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw;
+    }
+
+    /* 📱 Terminal principal se mueve abajo en móvil */
+    .terminal-box {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        max-width: 100vw;
+        height: 20vh;
+        max-height: 20vh;
+        z-index: 10;
+        border-radius: 8px 8px 0 0;
+    }
+
+    /* 📱 Lector de noticias se ajusta para móvil */
+    .reader-box {
+        bottom: 22vh;
+        left: 0;
+        right: 0;
+        width: 100vw;
+        max-width: 100vw;
+        height: 35vh;
+        max-height: 35vh;
+        z-index: 20;
+        border-radius: 8px;
+    }
+
+    /* 📱 Consola de errores centrada en móvil */
+    .error-console {
+        position: fixed;
+        top: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90vw;
+        max-width: 90vw;
+        max-height: 15vh;
+        z-index: 100;
+    }
+}
         
-        @media (max-width: 768px) {
-            /* 📱 Globo ocupa pantalla completa en móvil */
-            #globeViz {
-                left: 0 !important;
-                width: 100vw !important;
-                max-width: 100vw;
-            }
-
-            /* 📱 Terminal principal se mueve abajo en móvil */
-            .terminal-box {
-                position: fixed;
-                top: auto;
-                bottom: 0;
-                left: 0;
-                width: 100vw;
-                max-width: 100vw;
-                height: 20vh; 
-                max-height: 20vh; 
-                z-index: 10;
-                border-radius: 8px 8px 0 0;
-            }
-
-            /* 📱 Lector de noticias se ajusta para móvil */
-            .reader-box {
-                bottom: 22vh; 
-                left: 0;
-                right: 0;
-                width: 100vw;
-                max-width: 100vw;
-                height: 35vh; 
-                max-height: 35vh; 
-                z-index: 20;
-                border-radius: 8px;
-            }
-
-            /* 📱 Consola de errores centrada en móvil */
-            .error-console {
-                position: fixed;
-                top: 5px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 90vw;
-                max-width: 90vw;
-                max-height: 15vh; 
-                z-index: 100;
-            }
-        }
-    </style>
