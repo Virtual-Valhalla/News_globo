@@ -45,11 +45,12 @@
                 <button class="terminal-box-btn" onclick="toggleTerminal()">−</button>
             </div>
         </div>
-
-        <div id="terminal-content" class="terminal-box-status">
-             <!-- 📰 Contenido dinámico de noticias -->
+        <div class="terminal-box-header">
             <div class="terminal-boxmsg-info">STATUS: <span class="active">ACTIVE</span></div>
             <div id="node-label" class="terminal-boxmsg-info">NODE: <span id="node-label" class="terminal-boxmsg-success">GLOBAL_FEED</span></div>
+        </div>
+        <div id="terminal-content" class="terminal-box-status">
+             <!-- 📰 Contenido dinámico de noticias -->
             <button id="back-button" class="back-btn" onclick="resetToGlobal()">> RESET_CAMERA</button>
             <div id="news-container">
                 <div class="terminal-boxmsg-warning">> ESCANEANDO...</div>
