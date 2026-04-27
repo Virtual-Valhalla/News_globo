@@ -180,8 +180,8 @@ body {
     width: 35vw;
     max-width: 475px;
     /* height: 95vh; */
-    max-height: 95vh;
-    
+    max-height: 40vh;
+
     border: 2px solid #ff00ff;
     /* Borde magenta */
     background: rgba(0, 0, 0, 0.7);
@@ -195,9 +195,6 @@ body {
     flex-direction: column;
     border-radius: 4px;
     overflow-y: auto;
-    /* Scroll vertical */
-    scrollbar-width: thin;
-    scrollbar-color: #ff00ff #000;
 }
 
 
@@ -268,10 +265,13 @@ body {
     flex-grow: 1;
     overflow-y: auto;
     font-size: 0.75em;
-    scrollbar-width: thin;
-    scrollbar-color: #00ffff #000;
+    /*
     min-height: 30px;
     max-height: 140px;
+    */
+    /* Scroll vertical */
+    scrollbar-width: thin;
+    scrollbar-color: #ff00ff #000;
 }
 
 /* 💬 Estilo individual de cada mensaje en la consola */
@@ -524,17 +524,17 @@ h2 {
         transform: translateX(-50%);
         width: 90vw;
         max-width: 90vw;
-        height: 20vh;
-        max-height: 20vh;
-        z-index: 10;
+        max-height: 40vh;
+            z-index: 10;
         border-radius: 8px 8px 0 0;
     }
 
     /* 📱 Lector de noticias se ajusta para móvil */
     .reader-box {
-        bottom: 22vh;
-        left: 0;
-        right: 0;
+        bottom: 35vh;
+
+        left: 50%;
+        transform: translateX(-50%);
         width: 90vw;
         max-width: 90vw;
         height: 35vh;
