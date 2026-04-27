@@ -604,7 +604,7 @@
         logToConsole('Cargando GeoJSON...', 'info');
         
         // 📥 Descargar datos de países desde GeoJSON
-        fetch('static/custom.geo.json')
+        fetch('https://githubusercontent.com')
             .then(res => {
                 if (!res.ok) throw new Error('No se pudo cargar GeoJSON');
                 return res.json();
