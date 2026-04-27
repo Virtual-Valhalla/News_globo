@@ -158,7 +158,7 @@ La interfaz sigue una estética **cyberpunk retro-futurista**:
 
 ---
 
-**Última actualización**: 2026-04-25
+**Última actualización**: 2026-04-27
 
 ✨ *Made with ❤️ and cyberpunk aesthetics* ✨
 
