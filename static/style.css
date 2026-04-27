@@ -172,24 +172,33 @@ body {
 
 /* 📱 Contenedor de la terminal principal con lista de noticias */
 .terminal-box {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 25vw;
-    max-width: 25vw;
+
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    width: 40vw;
+    max-width: 40vw;
     height: 90vh;
-    border: 3px solid #ff00ff;
+    max-height: 90vh;
+    border: 2px solid #ff00ff;
     /* Borde magenta */
     background: rgba(0, 0, 0, 0.7);
-    padding: 20px;
+    /* Fondo semi-transparente */
+    padding: 12px;
     z-index: 10;
-    box-shadow: 0 0 15px #ff00ff;
-    /* Brillo magenta */
+    /* Por encima de todo */
+    box-shadow: 0 0 20px #ff00ff;
+    /* Brillo cian */
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
     overflow-y: auto;
     /* Scroll vertical */
     scrollbar-width: thin;
     scrollbar-color: #ff00ff #000;
 }
+
+
 /* 📌 Encabezado de la consola con título y botones */
 .terminal-box-header {
     display: flex;

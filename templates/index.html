@@ -39,9 +39,24 @@
     <!-- 📱 TERMINAL PRINCIPAL - LISTA DE NOTICIAS                           -->
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <div class="terminal-box">
-        <h2>NEWS_TERMINAL_V.1</h2>
-        <div class="status-line">STATUS: <span class="active">ACTIVE</span></div>
-        <div id="node-label" class="node-info">NODE: GLOBAL FEED</div>
+        <div class="terminal-box-header">
+            <span>NEWS_TERMINAL_V.1</span>
+            <div class="terminal-box-buttons">
+                <button class="terminal-box-btn" onclick="toggleTerminal()">−</button>
+            </div>
+        </div>
+        <div id="terminal-id" class="terminal-box-content">
+            <div class="terminal-box-message msg-info">
+                <span class="terminal-boxmsg-info">STATUS:</span>
+                <span class="terminal-boxmsg-success">ACTIVE</span>
+            </div>
+            <div class="terminal-box-message msg-info">
+                <span class="terminal-boxmsg-info">NODE:</span>
+                <span class="terminal-boxmsg-info"> GLOBAL FEED</span>
+            </div>
+
+        </div>
+        <div id="node-label" class="node-info"></div>
         <button id="back-button" class="back-btn" onclick="resetToGlobal()">> RESET_CAMERA</button>
         <div id="news-container">
             <div class="status-line">> ESCANEANDO...</div>
