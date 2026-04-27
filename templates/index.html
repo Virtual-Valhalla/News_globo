@@ -20,7 +20,7 @@
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <div id="error-console" class="error-console">
         <div class="console-header">
-            <span>CONSOLE_V.1</span>
+            <span>CONSOLE</span>
             <div class="console-buttons">
                 <button class="console-btn" onclick="clearConsole()">LIMPIAR</button>
                 <button class="console-btn" id="collapse-btn" onclick="toggleConsole()">−</button>
@@ -40,26 +40,20 @@
     <!-- ════════════════════════════════════════════════════════════════════ -->
     <div class="terminal-box">
         <div class="terminal-box-header">
-            <span>NEWS_TERMINAL_V.1</span>
+            <span>NEWS_TERMINAL</span>
             <div class="terminal-box-buttons">
                 <button class="terminal-box-btn" onclick="toggleTerminal()">−</button>
             </div>
         </div>
-        <div id="terminal-id" class="terminal-box-content">
-            <div class="terminal-box-message msg-info">
-                <span class="terminal-boxmsg-info">STATUS:</span>
-                <span class="terminal-boxmsg-success">ACTIVE</span>
-            </div>
-            <div class="terminal-box-message msg-info">
-                <span class="terminal-boxmsg-info">NODE:</span>
-                <span class="terminal-boxmsg-info"> GLOBAL FEED</span>
-            </div>
 
-        </div>
-        <div id="node-label" class="node-info"></div>
-        <button id="back-button" class="back-btn" onclick="resetToGlobal()">> RESET_CAMERA</button>
-        <div id="news-container">
-            <div class="status-line">> ESCANEANDO...</div>
+        <div id="terminal-content" class="terminal-box-content">
+             <!-- 📰 Contenido dinámico de noticias -->
+            <div class="terminal-boxmsg-info">STATUS: <span class="active">ACTIVE</span></div>
+            <div id="node-label" class="terminal-boxmsg-info">NODE: <span id="node-label" class="terminal-boxmsg-success">GLOBAL_FEED</span></div>
+            <button id="back-button" class="back-btn" onclick="resetToGlobal()">> RESET_CAMERA</button>
+            <div id="news-container">
+                <div class="terminal-boxmsg-warning">> ESCANEANDO...</div>
+            </div>
         </div>
     </div>
 
