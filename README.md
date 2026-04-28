@@ -102,38 +102,6 @@ News_globo/
 
 ---
 
-## 🎨 Diseño Visual
-
-La interfaz sigue una estética **cyberpunk retro-futurista**:
-
-- **Colores Neón**:
-  - Cyan (`#00ffff`) - Información principal
-  - Magenta (`#ff00ff`) - Elementos interactivos
-  - Verde (`#00ff00`) - Consola de lectura
-  - Negro (`#000000`) - Fondo
-
-- **Fuente**: Courier New (estilo terminal)
-- **Sombras**: Brillos neón alrededor de elementos principales
-- **Animaciones**: Transiciones suaves al interactuar
-
----
---------------------------------------------------------------------------------
-
-
-### Navegar por la Interfaz
-
-1. **Vista Global** - Al iniciar, ves todas las noticias mundiales
-2. **Seleccionar País** - Haz clic en cualquier país del globo
-3. **Ver Noticias** - Se cargarán automáticamente las noticias del país seleccionado
-4. **Leer Artículo** - Haz clic en una noticia para ver detalles completos
-5. **Volver** - Usa el botón "RESET_CAMERA" para regresar a la vista global
-
----
-
-
-
----
-
 ## 👨‍💻 Autor
 
 **Virtual-Valhalla** - Desarrollador de aplicaciones web interactivas
