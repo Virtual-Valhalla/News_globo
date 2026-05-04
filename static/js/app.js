@@ -112,46 +112,42 @@ world = Globe()
 .polygonCapColor(d => d === hoverD ? 'rgba(0, 255, 255, 0.3)' : 'rgba(0, 255, 255, 0.00)')
             // 📈 Altura más elevada al pasar el ratón
 .polygonAltitude(d => d === hoverD ? 0.05 : 0.00175)
-
             // 📍 Configurar puntos para territorios pequeños
 .pointColor(() => '#ff00ff')
 .pointAltitude(0.07)
 .pointRadius(0.5)
 .pointsMerge(true)
-
             // 🖱️ Evento: al pasar el ratón sobre un polígono
 .onPolygonHover(poly => {
     hoverD = poly;
     world.polygonAltitude(world.polygonAltitude());
 })
-
             // 🖱️ Evento: al hacer clic en un polígono
 .onPolygonClick((polygon, event, { lat, lng }) => {
     logToConsole(`🖱️ Polígono clickeado. Inspeccionando propiedades...`, 'debug');
 
     const d = polygon.properties;
     console.log("📋 Propiedades del polígono:", d);
-
                 // 🔍 Intentar múltiples variaciones de nombres de propiedades
     const name = d.ADMIN || d.name || d.NAME || 'Unknown Country';
     const code = d.ISO_A2 || d.iso_a2 || d.code || d.CODE || null;
-
                 // ✅ Validar que tenemos un código válido
-    if (!code) {
-        logToConsole(`❌ No se encontró código ISO para: ${name}`, 'error');
-        return;
-    }
-
-    selectNode(name, code.toLowerCase(), lat, lng);
+    if (code) selectNode(name, code.toLowerCase(), lat, lng);
 })
-
             // 🖱️ Evento: al hacer clic en un punto (territorio pequeño)
-.onPointClick(pt => {
-    selectNode(pt.name, pt.id, pt.lat, pt.lng);
-})
-
+.onPointClick(pt => selectNode(pt.name, pt.id, pt.lat, pt.lng))
             // 🖱️ Evento: al hacer clic en el globo (sin país seleccionado)
 .onGlobeClick(() => { if (selectedCountry) resetToGlobal(); });
+
+// Guardar referencia global para la intro
+window.myGlobe = world;
+
+// === CONFIGURACIÓN INICIAL LEJANA PARA LA INTRO ===
+world.pointOfView({ lat: 25, lng: 0, altitude: 100.0 }, 0); // muy lejos
+
+world.controls().autoRotate = false; // desactivamos rotación al inicio
+
+
 
         // 📏 Ajustar tamaño del globo al redimensionar la ventana
 window.addEventListener('resize', (event) => {
@@ -437,6 +433,7 @@ function resetToGlobal() {
          */
 window.onload = () => {
     logToConsole('Aplicación cargada', 'success');
-            resetToGlobal(); // 🌍 Iniciar con vista global
-        };
-
+    
+    initIntro();           // ← Nueva línea
+    // resetToGlobal();    // se llamará automáticamente después del click
+};
