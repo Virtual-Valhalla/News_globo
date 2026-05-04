@@ -7,6 +7,7 @@ let hoverD = null;                      // 🖱️ Polígono bajo el ratón
 let selectedCountry = null;             // 🗺️ Código del país seleccionado
 const BASE_ROTATION_SPEED = 0.5;        // ⚙️ Velocidad de rotación automática
 let isConsoleCollapsed = false;         // 📋 Estado de la consola
+let isTerminalCollapsed = false;        // 📋 Estado de la terminal
 
 /* ════════════════════════════════════════════════════════════════════ */
 /* 📋 SECCIÓN 2: SISTEMA DE CONSOLA DE ERRORES                        */
@@ -75,6 +76,23 @@ function clearConsole() {
     const consoleContent = document.getElementById('console-content');
     consoleContent.innerHTML = '';
     logToConsole('Consola limpiada', 'info');
+}
+
+/**
+* 🔽 Alterna entre contraer y expandir la terminal de noticias
+*/
+function toggleTerminal() {
+    const box = document.querySelector('.terminal-box');
+    const btn = document.querySelector('.terminal-box-btn');
+    isTerminalCollapsed = !isTerminalCollapsed;
+
+    if (isTerminalCollapsed) {
+        box.classList.add('terminal-box-collapsed');
+        btn.textContent = '+';
+    } else {
+        box.classList.remove('terminal-box-collapsed');
+        btn.textContent = '−';
+    }
 }
 
 /**

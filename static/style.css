@@ -52,6 +52,17 @@ body {
     display: flex;
     flex-direction: column;
     border-radius: 4px;
+
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-12px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.error-console.panel-revealed {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
 }
 
 /* 📌 Encabezado de la consola con título y botones */
@@ -195,6 +206,17 @@ body {
     flex-direction: column;
     border-radius: 4px;
     overflow-y: auto;
+
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-12px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.terminal-box.panel-revealed {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
 }
 
 
@@ -330,8 +352,10 @@ body {
 }
 
 
-/* 🔽 Oculta contenido cuando la consola está colapsada */
-.terminal-box-collapsed .terminal-box-content {
+/* 🔽 Oculta contenido cuando la terminal está colapsada */
+.terminal-box-collapsed .terminal-box-content,
+.terminal-box-collapsed .terminal-box-status,
+.terminal-box-collapsed .terminal-box-header2 {
     display: none;
 }
 

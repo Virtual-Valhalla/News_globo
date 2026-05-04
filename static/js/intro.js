@@ -56,16 +56,31 @@ document.addEventListener('click', () => {
         ease: "power2.in"
     });
 
-    // Zoom al globo
-    gsap.to(globe.pointOfView(), {
+    // Zoom al globo — proxy object para que GSAP aplique valores reales al globo cada frame
+    const startPov = globe.pointOfView();
+    const povProxy = { altitude: startPov.altitude };
+
+    gsap.to(povProxy, {
         altitude: 1.65,
         duration: 4.0,
-        ease: "power2.inOut",
+        ease: "power3.out",
         onStart: () => globe.controls().autoRotate = false,
-        onUpdate: () => globe.controls().update(),
+        onUpdate: () => {
+            globe.pointOfView({ altitude: povProxy.altitude }, 0);
+            globe.controls().update();
+        },
         onComplete: () => {
             globe.controls().autoRotate = true;
             globe.controls().autoRotateSpeed = 0.5;
+
+            // Revelar paneles con animación escalonada
+            setTimeout(() => {
+                document.querySelector('.terminal-box').classList.add('panel-revealed');
+            }, 150);
+            setTimeout(() => {
+                document.getElementById('error-console').classList.add('panel-revealed');
+            }, 350);
+
             logToConsole('🔓 INTRO COMPLETADA - BIENVENIDO AL GLOBO', 'success');
             resetToGlobal();
         }
