@@ -56,8 +56,8 @@ cd News_globo
 # 2. Instalar dependencias
 pip install -r requirements.txt
 
-# 3. Configurar la API key (variable de entorno)
-export NEWS_API_KEY=tu_api_key_aqui
+# 3. Configurar la API key (variable de entorno - crea el archivo .env con este contenido)
+NEWS_API_KEY=tu_api_key_aqui
 
 # 4. Ejecutar el servidor
 python app.py
