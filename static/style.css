@@ -368,45 +368,150 @@ body {
     position: absolute;
     bottom: 20px;
     right: 20px;
-    width: 45vw;
-    max-width: 45vw;
-    height: 30vh;
-    border: 2px solid #00ff00;
-    /* Borde verde */
-    background: rgba(0, 20, 0, 0.9);
-    /* Fondo verde oscuro */
-    padding: 15px;
+    width: 38vw;
+    max-width: 520px;
+    max-height: 78vh;
+    border: 2px solid #00ffff;
+    background: rgba(0, 8, 20, 0.96);
+    padding: 0;
     z-index: 20;
-    box-shadow: 0 0 10px #00ff00;
-    /* Brillo verde */
+    box-shadow: 0 0 28px #00ffff55, inset 0 0 40px rgba(0,255,255,0.03);
     display: none;
-    /* Oculto por defecto */
     flex-direction: column;
+    overflow: hidden;
 }
 
-/* 🏆 Encabezado del lector con título y botón de cerrar */
+/* 🏆 Encabezado del lector */
 .reader-header {
-    border-bottom: 1px solid #00ff00;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
+    border-bottom: 1px solid #00ffff44;
+    padding: 10px 14px;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-weight: bold;
-    color: #00ff00;
-}
-
-/* 📖 Área de contenido del lector */
-.reader-content {
-    font-size: 0.9em;
-    color: #00ff00;
-    overflow-y: auto;
-    flex-grow: 1;
+    font-size: 0.72em;
+    color: #00ffff;
+    letter-spacing: 2px;
+    background: rgba(0, 255, 255, 0.06);
+    flex-shrink: 0;
 }
 
 /* ❌ Botón de cerrar */
 .close-btn {
     cursor: pointer;
     color: #ff0000;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+.close-btn:hover { color: #ff6666; }
+
+/* 📖 Área de contenido del lector */
+.reader-content {
+    font-size: 0.82em;
+    color: #aaffff;
+    overflow-y: auto;
+    flex-grow: 1;
+    scrollbar-width: thin;
+    scrollbar-color: #00ffff55 #000;
+    padding: 0 0 12px 0;
+}
+
+/* 🖼️🎬 Zona de media (imagen o video) en el lector */
+.reader-media-wrap {
+    width: 100%;
+    height: 210px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-bottom: 1px solid #00ffff33;
+    background: #000;
+    position: relative;
+}
+.reader-media-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 20, 30, 0.9);
+}
+.reader-media-spinner {
+    color: #00ffff88;
+    font-size: 0.72em;
+    letter-spacing: 2px;
+    animation: pulse-opacity 1.2s ease-in-out infinite;
+}
+.reader-media-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 0, 255, 0.04);
+    height: 60px;
+}
+.reader-no-media {
+    color: #ff00ff44;
+    font-size: 0.7em;
+    letter-spacing: 2px;
+}
+@keyframes pulse-opacity {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 1; }
+}
+
+/* Imagen dentro del media wrap */
+.reader-image {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    display: block;
+    filter: saturate(1.15) contrast(1.05);
+}
+
+/* 🎬 Video embed (YouTube iframe o <video>) */
+.reader-video {
+    width: 100%;
+    height: 210px;
+    display: block;
+    border: none;
+    background: #000;
+}
+
+/* 🏷️ Meta: fuente y fecha */
+.reader-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px 4px;
+    border-bottom: 1px solid #00ffff22;
+    gap: 6px;
+}
+.reader-source {
+    color: #ff00ff;
+    font-size: 0.68em;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.reader-date {
+    color: #00ffff77;
+    font-size: 0.65em;
+    white-space: nowrap;
+}
+
+/* 📝 Título y descripción en el lector */
+.reader-title {
+    color: #00ffff;
+    font-size: 0.88em;
+    font-weight: bold;
+    line-height: 1.4;
+    margin: 10px 14px 6px;
+    padding: 0;
+}
+.reader-desc {
+    color: #88dddd;
+    font-size: 0.78em;
+    line-height: 1.6;
+    margin: 0 14px 10px;
+    padding: 0;
+    border-left: 2px solid #00ffff33;
+    padding-left: 10px;
 }
 
 /* ════════════════════════════════════════════════════════════════════ */
@@ -444,6 +549,48 @@ h2 {
         /* SECCIÓN 6: BOTONES E INTERACCIÓN                                   */
         /* ════════════════════════════════════════════════════════════════════ */
 
+/* ── Selector de categorías ───────────────────────────────────────── */
+.category-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-top: 1px solid rgba(0, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+    margin-bottom: 4px;
+    user-select: none;
+}
+
+.cat-label {
+    color: #ff00ff;
+    font-size: 0.78em;
+    font-weight: bold;
+    letter-spacing: 2px;
+    text-align: center;
+    flex: 1;
+    transition: opacity 0.15s;
+}
+
+.cat-arrow {
+    background: transparent;
+    border: 1px solid #ff00ff;
+    color: #ff00ff;
+    font-size: 0.7em;
+    padding: 3px 8px;
+    cursor: pointer;
+    line-height: 1;
+    transition: background 0.15s, color 0.15s;
+}
+
+.cat-arrow:hover {
+    background: #ff00ff;
+    color: #000;
+}
+
+.cat-arrow:active {
+    transform: scale(0.92);
+}
+
         /* 🔙 Botón para resetear la cámara */
 .back-btn {
     display: none;
@@ -465,19 +612,56 @@ h2 {
 
         /* 📰 Elemento individual de noticia */
 .news-item {
-    margin-bottom: 20px;
-    padding: 10px;
+    margin-bottom: 6px;
+    padding: 7px 10px;
     border-left: 2px solid #00ffff;
-    background: rgba(0, 255, 255, 0.05);
-    /* Fondo cian muy tenue */
+    background: rgba(0, 255, 255, 0.04);
     cursor: pointer;
-    transition: 0.2s;
+    transition: background 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: flex-start;
+}
+
+/* 📦 Cuerpo del item (rank + título + fuente) */
+.news-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* 🔢 Número de ranking */
+.news-rank {
+    color: #ff00ff;
+    font-weight: bold;
+    font-size: 0.72em;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+/* 📝 Texto del título en la lista */
+.news-title-text {
+    color: #00ffff;
+    font-size: 0.78em;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 🏷️ Nombre de la fuente en la lista */
+.news-src {
+    color: #ff00ff88;
+    font-size: 0.65em;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 /* 🖱️ Efecto hover en noticias */
 .news-item:hover {
     background: rgba(255, 0, 255, 0.1);
-    /* Fondo magenta al pasar ratón */
     border-left-color: #ff00ff;
 }
 
@@ -485,9 +669,18 @@ h2 {
 .news-link {
     color: #ff00ff;
     text-decoration: none;
-    font-size: 0.8em;
-    display: block;
-    margin-top: 5px;
+    font-size: 0.75em;
+    display: inline-block;
+    margin-top: 8px;
+    border: 1px solid #ff00ff55;
+    padding: 4px 8px;
+    letter-spacing: 1px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.news-link:hover {
+    background: #ff00ff;
+    color: #000;
 }
 
         /* ════════════════════════════════════════════════════════════════════ */

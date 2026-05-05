@@ -5,9 +5,52 @@
 let world;                              // 🌍 Instancia del globo 3D
 let hoverD = null;                      // 🖱️ Polígono bajo el ratón
 let selectedCountry = null;             // 🗺️ Código del país seleccionado
+let selectedCountryName = null;         // 🗺️ Nombre del país seleccionado
 const BASE_ROTATION_SPEED = 0.5;        // ⚙️ Velocidad de rotación automática
 let isConsoleCollapsed = false;         // 📋 Estado de la consola
 let isTerminalCollapsed = false;        // 📋 Estado de la terminal
+
+// ── Categorías de noticias ────────────────────────────────────────────
+const CATEGORIES = [
+    { label: 'GENERAL',        api: '' },
+    { label: 'TECNOLOGÍA',     api: 'technology' },
+    { label: 'NEGOCIOS',       api: 'business' },
+    { label: 'DEPORTES',       api: 'sports' },
+    { label: 'ENTRETENIMIENTO',api: 'entertainment' },
+    { label: 'SALUD',          api: 'health' },
+    { label: 'CIENCIA',        api: 'science' },
+];
+let currentCatIndex = 0;
+
+function prevCategory() {
+    currentCatIndex = (currentCatIndex - 1 + CATEGORIES.length) % CATEGORIES.length;
+    updateCategoryUI();
+    loadNews(selectedCountry || 'global');
+}
+
+function nextCategory() {
+    currentCatIndex = (currentCatIndex + 1) % CATEGORIES.length;
+    updateCategoryUI();
+    loadNews(selectedCountry || 'global');
+}
+
+function updateCategoryUI() {
+    document.getElementById('cat-label').textContent = CATEGORIES[currentCatIndex].label;
+}
+
+// ── Swipe táctil en el selector de categorías ─────────────────────────
+let _swipeStartX = null;
+document.addEventListener('DOMContentLoaded', () => {
+    const catRow = document.querySelector('.category-row');
+    if (!catRow) return;
+    catRow.addEventListener('touchstart', e => { _swipeStartX = e.touches[0].clientX; }, { passive: true });
+    catRow.addEventListener('touchend', e => {
+        if (_swipeStartX === null) return;
+        const dx = e.changedTouches[0].clientX - _swipeStartX;
+        if (Math.abs(dx) > 40) dx < 0 ? nextCategory() : prevCategory();
+        _swipeStartX = null;
+    }, { passive: true });
+});
 
 /* ════════════════════════════════════════════════════════════════════ */
 /* 📋 SECCIÓN 2: SISTEMA DE CONSOLA DE ERRORES                        */
@@ -145,12 +188,19 @@ world = Globe()
     logToConsole(`🖱️ Polígono clickeado. Inspeccionando propiedades...`, 'debug');
 
     const d = polygon.properties;
-    console.log("📋 Propiedades del polígono:", d);
-                // 🔍 Intentar múltiples variaciones de nombres de propiedades
     const name = d.ADMIN || d.name || d.NAME || 'Unknown Country';
-    const code = d.ISO_A2 || d.iso_a2 || d.code || d.CODE || null;
-                // ✅ Validar que tenemos un código válido
-    if (code) selectNode(name, code.toLowerCase(), lat, lng);
+
+    // Natural Earth usa a veces ISO_A2="-99" para territorios especiales;
+    // en ese caso intentar campos alternativos antes de caer al nombre.
+    let code = d.ISO_A2 || d.iso_a2 || '-99';
+    if (code === '-99' || !code) code = d.ISO_A2_EH || '-99';
+    if (code === '-99' || !code) code = d.WB_A2     || '-99';
+    if (code === '-99' || !code) {
+        code = name.toLowerCase().replace(/[\s,.'()]+/g, '_');
+        logToConsole(`⚠️ Sin código ISO para "${name}", buscando por nombre`, 'warning');
+    }
+
+    selectNode(name, code.toLowerCase(), lat, lng);
 })
             // 🖱️ Evento: al hacer clic en un punto (territorio pequeño)
 .onPointClick(pt => selectNode(pt.name, pt.id, pt.lat, pt.lng))
@@ -200,7 +250,11 @@ fetch('https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs
                 // ✅ Validar estructura del GeoJSON
                 // 🔧 PROCESAR Y VALIDAR FEATURES
 
-    const cleanFeatures = countries.features
+    // Mantener TODOS los países — los de código -99 se buscan por nombre
+    const cleanFeatures = countries.features.filter(f =>
+        f.properties &&
+        (f.properties.ADMIN || f.properties.name || f.properties.NAME)
+    );
                 // 📊 Verificar que se cargaron países válidos
     if (cleanFeatures.length === 0) {
         logToConsole('❌ No se encontraron países válidos en el GeoJSON', 'error');
@@ -230,24 +284,16 @@ fetch('https://raw.githubusercontent.com/martynafford/natural-earth-geojson/refs
          * @param {number} lng - Longitud del centro del país
          */
 function selectNode(name, code, lat, lng) {
-            // ✅ Validaciones robustas
-    if (!code || code === 'undefined' || code === '' || code === null) {
-        logToConsole(`❌ Código de país inválido (${code})`, 'error');
-        return;
-    }
-    
     if (!name || name === 'undefined' || name === '') {
         logToConsole(`❌ Nombre de país inválido (${name})`, 'error');
         return;
     }
-    
-// 🔤 Normalizar código a minúsculas (NewsAPI usa minúsculas)
-    const normalizedCode = String(code).toLowerCase().trim();
-    
+
+    const normalizedCode = String(code || name).toLowerCase().trim();
     logToConsole(`📍 Seleccionando: ${name} (${normalizedCode})`, 'debug');
-    
-            // 💾 Guardar país seleccionado
+
     selectedCountry = normalizedCode;
+    selectedCountryName = name;
     
             // 🎨 Actualizar UI
     document.getElementById('node-label').innerText = `NODE: ${name.toUpperCase()}`;
@@ -294,9 +340,10 @@ function loadNews(code) {
     container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
     logToConsole(`Solicitando noticias para: ${code}`, 'info');
     
-            // 🔗 Construir URL
+            // 🔗 Construir URL con categoría activa
     const encodedCode = encodeURIComponent(code);
-    const newsUrl = `/country-news?country=${encodedCode}`;
+    const cat = CATEGORIES[currentCatIndex].api;
+    const newsUrl = `/country-news?country=${encodedCode}${cat ? '&category=' + cat : ''}`;
     
     logToConsole(`📨 Endpoint: ${newsUrl}`, 'debug');
     
@@ -336,18 +383,27 @@ function loadNews(code) {
         }
 
                     // ✅ Éxito: mostrar artículos
-        logToConsole(`✅ ${data.articles.length} artículos cargados para ${code}`, 'success');
+        const articles = data.articles;
+        const cacheMsg = data.cached
+            ? `⚡ CACHÉ (expira en ${data.expires_in})`
+            : '🌐 API (datos frescos)';
+        logToConsole(`✅ ${articles.length} noticias para ${code.toUpperCase()} — ${cacheMsg}`, 'success');
 
-                    // 🎨 Limpiar y crear elementos de noticias
+                    // 🎨 Limpiar y crear elementos de noticias (solo titular + fuente, sin imagen)
         container.innerHTML = '';
-        data.articles.forEach((art, idx) => {
+        articles.forEach((art, idx) => {
             const div = document.createElement('div');
             div.className = 'news-item';
-            div.innerHTML = `> ${art.title}`;
-                        div.onclick = () => openReader(art); // 🖱️ Abrir panel de lectura al hacer clic
-                        // div.onclick = () => loadArticle(art.url); // NUEVO
-                        container.appendChild(div);
-                    });
+            const src = art.source?.name ? `<span class="news-src">${art.source.name}</span>` : '';
+            div.innerHTML = `
+                <div class="news-item-body">
+                    <span class="news-rank">${String(idx + 1).padStart(2, '0')}</span>
+                    <span class="news-title-text">${art.title}</span>
+                    ${src}
+                </div>`;
+            div.onclick = () => openReader(art);
+            container.appendChild(div);
+        });
     })
     .catch(err => {
                     // ❌ Error de conexión
@@ -372,17 +428,77 @@ function loadNews(code) {
          */
 function openReader(article) {
     const reader = document.getElementById('news-reader');
-    const body = document.getElementById('reader-body');
-    
-            // 👁️ Mostrar panel
+    const body   = document.getElementById('reader-body');
     reader.style.display = 'flex';
-    
-            // 📝 Cargar contenido del artículo
+
+    const pubDate    = article.publishedAt
+        ? new Date(article.publishedAt).toLocaleDateString('es-ES',
+            { day: 'numeric', month: 'short', year: 'numeric' })
+        : '';
+    const sourceName = article.source?.name || 'FUENTE DESCONOCIDA';
+
+    // Mostrar estructura base con imagen inmediatamente
+    const imgHtml = article.urlToImage
+        ? `<div class="reader-media-wrap" id="reader-media">
+               <img class="reader-image" src="${article.urlToImage}" alt=""
+                    onerror="this.style.display='none'">
+           </div>`
+        : `<div class="reader-media-wrap reader-media-loading" id="reader-media">
+               <span class="reader-media-spinner">⟳ BUSCANDO MEDIA...</span>
+           </div>`;
+
     body.innerHTML = `
-                <p><strong>ORIGEN:</strong> ${article.source.name || 'Unknown'}</p>
-                <p>> ${article.description || 'Sin resumen disponible.'}</p>
-                <a href="${article.url}" target="_blank" class="news-link">ACCEDER_A_FUENTE_EXTERNA ></a>
+        ${imgHtml}
+        <div class="reader-meta">
+            <span class="reader-source">▶ ${sourceName.toUpperCase()}</span>
+            ${pubDate ? `<span class="reader-date">${pubDate}</span>` : ''}
+        </div>
+        <p class="reader-title">${article.title || ''}</p>
+        <p class="reader-desc">${article.description || 'Sin resumen disponible.'}</p>
+        <a href="${article.url}" target="_blank" class="news-link">[ ACCEDER A FUENTE EXTERNA → ]</a>
     `;
+
+    // Buscar video en la página del artículo de forma asíncrona
+    fetch(`/article?url=${encodeURIComponent(article.url)}`)
+        .then(r => r.json())
+        .then(data => {
+            const mediaEl = document.getElementById('reader-media');
+            if (!mediaEl) return;
+            const v = data.video;
+            if (v && v.type === 'youtube' && v.url) {
+                // YouTube embed reemplaza la imagen
+                mediaEl.innerHTML = `
+                    <iframe class="reader-video"
+                        src="${v.url}"
+                        frameborder="0"
+                        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>`;
+                mediaEl.classList.remove('reader-media-loading');
+                logToConsole('▶ Video de YouTube encontrado y embebido', 'success');
+            } else if (v && v.type === 'video' && v.url) {
+                // Video nativo HTML5
+                mediaEl.innerHTML = `
+                    <video class="reader-video" controls preload="metadata">
+                        <source src="${v.url}">
+                    </video>`;
+                mediaEl.classList.remove('reader-media-loading');
+                logToConsole('▶ Video HTML5 encontrado', 'success');
+            } else if (!article.urlToImage) {
+                // Sin video ni imagen
+                mediaEl.classList.add('reader-media-empty');
+                mediaEl.innerHTML = `<span class="reader-no-media">[ SIN MEDIA DISPONIBLE ]</span>`;
+            } else {
+                // Ya tiene imagen, no hacer nada
+                mediaEl.classList.remove('reader-media-loading');
+            }
+        })
+        .catch(() => {
+            const mediaEl = document.getElementById('reader-media');
+            if (mediaEl && !article.urlToImage) {
+                mediaEl.innerHTML = `<span class="reader-no-media">[ ERROR CARGANDO MEDIA ]</span>`;
+            }
+        });
 }
 
         /**
