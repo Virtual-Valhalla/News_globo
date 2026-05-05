@@ -57,7 +57,7 @@ cd News_globo
 pip install -r requirements.txt
 
 # 3. Configurar la API key (variable de entorno - crea el archivo .env con este contenido)
-NEWS_API_KEY=tu_api_key_aqui
+NEWS_API_KEY=key1,key2,key3
 
 # 4. Ejecutar el servidor
 python app.py
