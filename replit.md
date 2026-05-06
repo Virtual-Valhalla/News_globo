@@ -1,42 +1,44 @@
-# NEWS_GLOBO
+# NEWS_GLOBO | Terminal V.1 Geo-Scanner
 
-A cyberpunk-themed 3D interactive globe for monitoring global news in real time, powered by NewsAPI.org and rendered with Globe.gl + Three.js.
+An interactive 3D globe that lets users click any country to view real-time news headlines and summaries, styled as a cyberpunk terminal UI.
 
 ## Run & Operate
 
-- **Start**: `python app.py` (port 5000)
-- **Required env secrets**: `NEWS_API_KEY` — one or more NewsAPI.org keys, comma-separated (e.g. `key1,key2`)
+- **Run**: `python app.py` (dev) or `gunicorn --bind=0.0.0.0:5000 --reuse-port app:app` (prod)
+- **Required env vars**: `NEWS_API_KEY` — one or more NewsAPI.org keys, comma-separated for rotation
 
 ## Stack
 
 - **Backend**: Python 3.12, Flask 3.1.1
-- **Frontend**: HTML5, CSS3, vanilla JavaScript
-- **3D Globe**: Globe.gl + Three.js (via CDN)
-- **Animations**: GSAP 3 (via CDN)
-- **Data**: NewsAPI.org REST API + GeoJSON country borders
+- **Frontend**: Vanilla JS, HTML5, CSS3, Globe.gl (Three.js), GSAP 3
+- **Web scraping**: BeautifulSoup4
+- **HTTP**: requests 2.32.4
+- **Server**: gunicorn (production)
 
 ## Where things live
 
-- `app.py` — Flask server: routes, in-memory cache, API key rotation
-- `templates/index.html` — Main UI (cyberpunk terminal theme)
-- `static/style.css` — Neon/cyberpunk styles
-- `static/js/app.js` — Globe logic and news loading
-- `static/js/intro.js` — GSAP zoom intro animation
-- `static/countries.geojson` — Country border data
+- `app.py` — Flask backend, API proxy, caching, key rotation
+- `templates/index.html` — main UI (Jinja2)
+- `static/js/app.js` — globe interaction and news logic
+- `static/js/intro.js` — GSAP intro animation
+- `static/js/globe.gl.min.js`, `static/js/three.min.js` — 3D libraries
+- `static/style.css` — neon/cyberpunk theme
+- `static/countries.geojson`, `static/ne_50m_admin_0_countries.json` — country geometries
+- `requirements.txt` — Python dependencies
 
 ## Architecture decisions
 
-- In-memory cache with TTL (6h countries, 4h global) to avoid rate-limit exhaustion
-- Multiple NewsAPI keys supported with automatic rotation on 429 responses
-- Fallback from `top-headlines` to `everything` endpoint for unsupported countries
-- Flask serves both the frontend (SSR via Jinja2) and acts as a proxy/backend for NewsAPI
+- In-memory cache (dict) with per-entry TTL: 6h for countries, 4h for global feed — avoids hitting NewsAPI rate limits on repeated requests
+- API key rotation: supports comma-separated `NEWS_API_KEY` values; automatically skips rate-limited keys and resets them after all are exhausted
+- Two-tier country lookup: uses `top-headlines?country=` for the 55 natively supported countries, falls back to `everything?q=` for others
+- Article scraping is done server-side to avoid CORS issues and expose a clean `/article?url=` endpoint
 
 ## Product
 
-- Interactive 3D globe — click any country to load its top news
-- Cyberpunk terminal UI with NEWS_TERMINAL panel, CONSOLE log, and DATA_DECRYPTOR article reader
-- Category filter (business, entertainment, general, health, science, sports, technology)
-- Intro zoom animation on first load
+- Interactive 3D globe — click any country to fetch its top news
+- Category filtering (business, entertainment, health, science, sports, technology)
+- Article detail panel with scraped full text and embedded video if available
+- Cache and API status endpoints (`/cache-status`, `/api-status`) for monitoring
 
 ## User preferences
 
@@ -44,10 +46,11 @@ _Populate as you build_
 
 ## Gotchas
 
-- `NEWS_API_KEY` must be set or the app runs in placeholder mode (no real news)
-- Free NewsAPI keys only work on localhost in dev mode; production requires a paid plan
+- The 3D globe requires WebGL; it renders as a black screen in headless/screenshot environments — this is expected
+- `NEWS_API_KEY` must be set as a Replit Secret before news fetching will work
+- Multiple keys (comma-separated) are recommended to avoid rate limits
 
 ## Pointers
 
-- [NewsAPI docs](https://newsapi.org/docs)
-- [Globe.gl docs](https://globe.gl/)
+- NewsAPI docs: https://newsapi.org/docs
+- Globe.gl docs: https://globe.gl
