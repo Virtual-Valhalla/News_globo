@@ -1,6 +1,6 @@
-/* ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════ */
 /* READER / DATA-DECRYPTOR COMPONENT — openReader, closeReader         */
-/* ════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════ */
 
 function openReader(article) {
     const reader = document.getElementById('news-reader');
@@ -13,9 +13,12 @@ function openReader(article) {
         : '';
     const sourceName = article.source?.name || 'FUENTE DESCONOCIDA';
 
-    const imgHtml = article.urlToImage
+    // Busca imagen: primero urlToImage (NewsAPI), luego imagen (BD)
+    const imageUrl = article.urlToImage || article.imagen;
+
+    const imgHtml = imageUrl
         ? `<div class="reader-media-wrap" id="reader-media">
-               <img class="reader-image" src="${article.urlToImage}" alt=""
+               <img class="reader-image" src="${imageUrl}" alt=""
                     onerror="this.style.display='none'">
            </div>`
         : `<div class="reader-media-wrap reader-media-loading" id="reader-media">
@@ -54,7 +57,7 @@ function openReader(article) {
                     </video>`;
                 mediaEl.classList.remove('reader-media-loading');
                 logToConsole('▶ Video HTML5 encontrado', 'success');
-            } else if (!article.urlToImage) {
+            } else if (!imageUrl) {
                 mediaEl.classList.add('reader-media-empty');
                 mediaEl.innerHTML = `<span class="reader-no-media">[ SIN MEDIA DISPONIBLE ]</span>`;
             } else {
@@ -63,7 +66,7 @@ function openReader(article) {
         })
         .catch(() => {
             const mediaEl = document.getElementById('reader-media');
-            if (mediaEl && !article.urlToImage) {
+            if (mediaEl && !imageUrl) {
                 mediaEl.innerHTML = `<span class="reader-no-media">[ ERROR CARGANDO MEDIA ]</span>`;
             }
         });
