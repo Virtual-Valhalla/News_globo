@@ -4,11 +4,9 @@ An interactive 3D globe that lets users click any country to view real-time news
 
 ## Run & Operate
 
-- **Run**: `bash sync_github.sh & python app.py` (via "Start application" workflow — sync daemon starts automatically)
-- **Prod**: `gunicorn --bind=0.0.0.0:5000 --reuse-port app:app`
-- **Required secrets**: `NEWS_API_KEY` — one or more NewsAPI.org keys, comma-separated for rotation
-- **Required secrets**: `GITHUB_TOKEN` — GitHub fine-grained PAT with Contents read/write on this repo (for auto-sync)
-- **GitHub sync**: Runs automatically every 300 s in the background; pushes any unpushed commits to `origin/main`. Token is never written to `.git/config` — passed as a one-shot authenticated URL per push.
+- **Run**: `python app.py` (dev) or `gunicorn --bind=0.0.0.0:5000 --reuse-port app:app` (prod)
+- **Required env vars**: `NEWS_API_KEY` — one or more NewsAPI.org keys, comma-separated for rotation
+- **GitHub push**: `git push "https://$GITHUB_PERSONAL_ACCESS_TOKEN@github.com/Virtual-Valhalla/News_globo.git" main`
 
 ## Stack
 
@@ -37,8 +35,8 @@ static/
   js/app.js                  — selectNode, loadNews, resetToGlobal, onload
   js/intro.js                — GSAP intro animation
   js/shaders/waterDrop.js    — Three.js custom shader (unused/reserved)
-  vendor/three.min.js        — Three.js library
-  vendor/globe.gl.min.js     — Globe.gl library
+  vendor/three.min.js        — Three.js library (local)
+  vendor/globe.gl.min.js     — Globe.gl library (local)
   data/                      — GeoJSON country geometry files
 requirements.txt             — Python dependencies
 ```
@@ -51,6 +49,7 @@ requirements.txt             — Python dependencies
 - Two-tier country lookup: `top-headlines?country=` for 55 native countries, `everything?q=` fallback for others
 - Article scraping done server-side via `/article?url=` to avoid CORS issues
 - JS load order: console → terminal → reader → intro → globe_engine → app (globals cascade)
+- Vendor libs served locally (`static/vendor/`) to avoid CDN downtime issues
 
 ## Product
 
@@ -61,7 +60,8 @@ requirements.txt             — Python dependencies
 
 ## User preferences
 
-_Populate as you build_
+- Project uses Spanish for UI labels and log messages
+- Prefers modular file structure (one responsibility per file)
 
 ## Gotchas
 
@@ -69,11 +69,10 @@ _Populate as you build_
 - `NEWS_API_KEY` must be set as a Replit Secret before news fetching works
 - Multiple keys (comma-separated) are recommended to avoid rate limits
 - JS files are vanilla globals — load order in `index.html` is significant
-- `GITHUB_TOKEN` must have Contents read/write on the `News_globo` repo; a classic PAT with `repo` scope also works
-- GitHub sync daemon logs appear in the "Start application" workflow console (prefixed `[github-sync]`)
-- The "GitHub Sync" workflow in the panel is a one-shot manual alternative; the daemon in "Start application" is what runs automatically
+- To push to GitHub use `GITHUB_PERSONAL_ACCESS_TOKEN` secret in the push URL (git config is restricted in Replit main agent)
 
 ## Pointers
 
 - NewsAPI docs: https://newsapi.org/docs
 - Globe.gl docs: https://globe.gl
+- GitHub repo: https://github.com/Virtual-Valhalla/News_globo
