@@ -9,16 +9,51 @@
         (function () {
             var _warn = console.warn;
             console.warn = function () {
-                if (arguments[0] && typeof arguments[0] === 'string' &&
-                    arguments[0].indexOf('Multiple instances of Three.js') !== -1) return;
+                var msg = arguments[0];
+                if (msg && typeof msg === 'string' && (
+                    msg.indexOf('Multiple instances of Three.js') !== -1 ||
+                    msg.indexOf('build/three.min.js') !== -1 ||
+                    msg.indexOf('build/three.js') !== -1
+                )) return;
                 _warn.apply(console, arguments);
             };
         })();
     </script>
-    <!-- 🌐 Three.js (requerido por intro.js) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <!-- 🌐 Three.js (requerido por intro.js y globe.gl como peer dep) -->
+    <script src="/static/js/three.min.js"></script>
+    <!-- THREE.Timer polyfill — added in r159, backfilled here for globe.gl compatibility -->
+    <script>
+        if (typeof THREE !== 'undefined' && !THREE.Timer) {
+            THREE.Timer = function () {
+                this._previousTime = 0;
+                this._currentTime = 0;
+                this._delta = 0;
+                this._elapsed = 0;
+                this._timescale = 1;
+            };
+            THREE.Timer.prototype.update = function (timestamp) {
+                if (timestamp === undefined) timestamp = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+                this._delta = ((timestamp - this._previousTime) / 1000) * this._timescale;
+                this._elapsed += this._delta;
+                this._previousTime = timestamp;
+                this._currentTime = timestamp;
+                return this;
+            };
+            THREE.Timer.prototype.getDelta = function () { return this._delta; };
+            THREE.Timer.prototype.getElapsed = function () { return this._elapsed; };
+            THREE.Timer.prototype.getTimescale = function () { return this._timescale; };
+            THREE.Timer.prototype.setTimescale = function (v) { this._timescale = v; return this; };
+            THREE.Timer.prototype.reset = function () {
+                this._currentTime = (typeof performance !== 'undefined') ? performance.now() : Date.now();
+                this._previousTime = this._currentTime;
+                this._delta = 0;
+                return this;
+            };
+            THREE.Timer.prototype.dispose = function () { return this; };
+        }
+    </script>
     <!-- 🌐 Librería para renderizar globos terráqueos 3D interactivos -->
-    <script src="//unpkg.com/globe.gl"></script>
+    <script src="/static/js/globe.gl.min.js"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
