@@ -22,15 +22,16 @@ def cache_get(key):
     logger.info(f"⚡ Caché HIT para '{key}' (edad: {age_min} min)")
     return entry
 
-def cache_set(key, articles, ttl):
+def cache_set(key, articles, ttl, scan_mode='direct'):
     now = time.time()
     _cache[key] = {
         'articles':   articles,
         'cached_at':  now,
         'expires_at': now + ttl,
         'ttl':        ttl,
+        'scan_mode':  scan_mode,
     }
-    logger.info(f"💾 Caché guardado para '{key}' (TTL: {ttl // 3600}h)")
+    logger.info(f"💾 Caché guardado para '{key}' (TTL: {ttl // 3600}h, modo: {scan_mode})")
 
 def cache_entry_info(entry):
     remaining = max(0, entry['expires_at'] - time.time())

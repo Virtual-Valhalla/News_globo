@@ -94,9 +94,10 @@
         </div>
         <div class="terminal-box-header2 category-row">
             <button class="cat-arrow" id="cat-prev" onclick="prevCategory()">&#9664;</button>
-            <span id="cat-label" class="cat-label">GENERAL</span>
+            <span id="cat-label" class="cat-label" onclick="toggleCatDropdown()">GENERAL ▾</span>
             <button class="cat-arrow" id="cat-next" onclick="nextCategory()">&#9654;</button>
         </div>
+        <div id="cat-dropdown" class="cat-dropdown"></div>
         <div class="terminal-box-header2">
             <button id="back-button" class="back-btn" onclick="resetToGlobal()">> RESET_CAMERA</button>
         </div>

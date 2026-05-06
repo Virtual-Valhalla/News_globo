@@ -1,5 +1,7 @@
 import os
 import logging
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask
 from routes.main_routes import main_bp
 from routes.api_routes import api_bp

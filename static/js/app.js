@@ -40,11 +40,12 @@ function loadNews(code) {
         return;
     }
 
-    container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code}...</div>`;
+    container.innerHTML = `<div class="status-line">> ACCEDIENDO A SECTOR ${code.toUpperCase()}...</div>`;
     logToConsole(`Solicitando noticias para: ${code}`, 'info');
 
     const encodedCode = encodeURIComponent(code);
     const cat         = CATEGORIES[currentCatIndex].api;
+    const catLabel    = CATEGORIES[currentCatIndex].label;
     const newsUrl     = `/country-news?country=${encodedCode}${cat ? '&category=' + cat : ''}`;
     logToConsole(`📨 Endpoint: ${newsUrl}`, 'debug');
 
@@ -55,6 +56,15 @@ function loadNews(code) {
             return res.json();
         })
         .then(data => {
+            // ── Deep-Scan feedback ────────────────────────────────────────
+            if (data.scan_mode === 'deep-scan') {
+                const countryLabel = selectedCountryName || code.toUpperCase();
+                logToConsole(
+                    `[SEARCH] Country not in primary list. Initiating Deep-Scan for ${countryLabel} + ${catLabel}...`,
+                    'warning'
+                );
+            }
+
             if (data.status === 'error') {
                 logToConsole(`❌ ${data.type}: ${data.message}`, 'error');
                 container.innerHTML = `
@@ -76,11 +86,13 @@ function loadNews(code) {
                     </div>`;
                 return;
             }
+
             const articles = data.articles;
             const cacheMsg = data.cached
                 ? `⚡ CACHÉ (expira en ${data.expires_in})`
                 : '🌐 API (datos frescos)';
-            logToConsole(`✅ ${articles.length} noticias para ${code.toUpperCase()} — ${cacheMsg}`, 'success');
+            const modeTag  = data.scan_mode === 'deep-scan' ? ' [DEEP-SCAN]' : '';
+            logToConsole(`✅ ${articles.length} noticias para ${code.toUpperCase()}${modeTag} — ${cacheMsg}`, 'success');
 
             container.innerHTML = '';
             articles.forEach((art, idx) => {
