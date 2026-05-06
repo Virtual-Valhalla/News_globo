@@ -182,7 +182,10 @@ def filter_articles(articles):
 # ─────────────────────────────────────────────
 @app.route('/')
 def index():
-    return render_template('index.html')
+    resp = app.make_response(render_template('index.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    resp.headers['Pragma'] = 'no-cache'
+    return resp
 
 VALID_CATEGORIES = {'business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology'}
 

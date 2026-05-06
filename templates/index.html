@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TERMINAL_V.1 - GEO-SCANNER</title>
+    <!-- Suppress known globe.gl internal Three.js duplicate warning -->
+    <script>
+        (function () {
+            var _warn = console.warn;
+            console.warn = function () {
+                if (arguments[0] && typeof arguments[0] === 'string' &&
+                    arguments[0].indexOf('Multiple instances of Three.js') !== -1) return;
+                _warn.apply(console, arguments);
+            };
+        })();
+    </script>
+    <!-- 🌐 Three.js (requerido por intro.js) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <!-- 🌐 Librería para renderizar globos terráqueos 3D interactivos -->
     <script src="//unpkg.com/globe.gl"></script>
     <link rel="stylesheet" href="/static/style.css">
