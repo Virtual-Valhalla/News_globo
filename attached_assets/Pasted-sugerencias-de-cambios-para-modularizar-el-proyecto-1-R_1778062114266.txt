@@ -1,0 +1,43 @@
+sugerencias de cambios para modularizar el proyecto:
+1. Reestructuración del Backend (Python/Flask)
+Actualmente, app.py actúa como un monolito que gestiona tanto el servidor como la lógica de negocio
+.
+Implementar Flask Blueprints: Se sugiere dividir la aplicación en componentes lógicos. Por ejemplo, crear un Blueprint para la API de noticias (routes/news.py) y otro para la interfaz principal (routes/main.py)
+.
+Capa de Servicios: Mover la lógica de interacción con NewsAPI y el sistema de rotación de claves a un archivo independiente (ej. services/news_service.py)
+. Esto desacopla la lógica de obtención de datos de las rutas web.
+Gestión de Configuración: Extraer las claves de API y las configuraciones de límite de tasa (rate-limit) a un archivo .env o un config.py dedicado, evitando que estén embebidas en el código principal
+.
+2. Modularización del Frontend (JavaScript)
+El proyecto utiliza una combinación de Globe.gl, Three.js y GSAP
+. Dada la complejidad de la interfaz (paneles de terminal, consola y descifrador de datos), la modularidad es clave:
+Componentización de Paneles: Los paneles identificados como NEWS_TERMINAL, CONSOLE y DATA_DECRYPTOR
+ deberían gestionarse como módulos de JS independientes (ej. static/js/components/terminal.js).
+Separación de la Lógica del Globo: El motor 3D y las animaciones de entrada realizadas con GSAP
+ deberían residir en un módulo especializado (ej. static/js/globe_engine.js), separado de la lógica que procesa los clics en los países o la carga de noticias.
+Gestión de Estilos: Aunque el estilo es "Cyberpunk"
+, se recomienda separar los estilos base de los estilos específicos de los componentes en archivos CSS distintos para facilitar el mantenimiento visual
+.
+3. Organización de Archivos Sugerida
+Para mejorar la escalabilidad y claridad, se propone la siguiente estructura de carpetas:
+News_globo/
+├── app.py (Punto de entrada mínimo)
+├── config.py (Configuración y rotación de APIs) [2]
+├── services/
+│   └── news_service.py (Lógica de NewsAPI y scraping) [2]
+├── routes/
+│   ├── main_routes.py
+│   └── api_routes.py (Endpoints /country-news, /article) [2]
+├── static/
+│   ├── css/
+│   │   ├── main.css
+│   │   └── terminal.css [4]
+│   └── js/
+│       ├── core/ (Globe.gl, Three.js logic) [3]
+│       └── components/ (Terminal, Console, Decryptor) [4]
+└── templates/
+    └── index.html [1]
+4. Gestión de Dependencias y Assets
+Servicio de Librerías Local: Los commits recientes indican un cambio hacia el servicio de librerías de forma local para evitar caídas
+. Es recomendable organizar estas librerías en una subcarpeta static/vendor/ para distinguir claramente el código de terceros del código propio del proyecto.
+Datos Geoespaciales: Centralizar los archivos GeoJSON y otros activos de datos en una carpeta static/data/ para que el motor 3D pueda consultarlos de forma organizada
