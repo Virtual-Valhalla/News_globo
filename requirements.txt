@@ -3,8 +3,4 @@ requests==2.32.4
 beautifulsoup4==4.14.3
 python-dotenv==1.2.2
 gunicorn
-beautifulsoup4
-Flask
-gunicorn
-python-dotenv
-requests
+lxml
