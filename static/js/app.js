@@ -429,7 +429,7 @@ function loadNews(code) {
 function openReader(article) {
     const reader = document.getElementById('news-reader');
     const body   = document.getElementById('reader-body');
-    reader.style.display = 'flex';
+    reader.classList.add('reader-visible');
 
     const pubDate    = article.publishedAt
         ? new Date(article.publishedAt).toLocaleDateString('es-ES',
@@ -504,8 +504,8 @@ function openReader(article) {
         /**
          * 🚪 Cierra el panel de lectura
          */
-function closeReader() { 
-    document.getElementById('news-reader').style.display = 'none'; 
+function closeReader() {
+    document.getElementById('news-reader').classList.remove('reader-visible');
 }
 
 // =======================================

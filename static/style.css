@@ -378,9 +378,20 @@ body {
     padding: 0;
     z-index: 20;
     box-shadow: 0 0 28px #00ffff55, inset 0 0 40px rgba(0, 255, 255, 0.03);
-    display: none;
+    display: flex;
     flex-direction: column;
     overflow: hidden;
+
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(16px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reader-box.reader-visible {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
 }
 
 /* 🏆 Encabezado del lector */
@@ -793,15 +804,17 @@ h2 {
     /* 📱 Lector de noticias se ajusta para móvil */
     .reader-box {
         bottom: 35vh;
-
         left: 50%;
-        transform: translateX(-50%);
-        
+        transform: translateX(-50%) translateY(16px);
         width: 90vw;
         max-width: 80vw;
         height: 35vh;
         max-height: 35vh;
         z-index: 20;
         border-radius: 8px;
+    }
+
+    .reader-box.reader-visible {
+        transform: translateX(-50%) translateY(0);
     }
 }
