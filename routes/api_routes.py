@@ -86,7 +86,6 @@ def get_db_news_by_country(country_code, limit=15):
         country_name = COUNTRY_NAMES.get(country_code, country_code.title())
         
         # Busca noticias en la BD (del scraping)
-        # Aquí simplemente devolvemos las más recientes de todas las fuentes
         news_items = db.get_news(limit=limit)
         
         # Convierte formato de BD a formato NewsAPI para compatibilidad
@@ -97,6 +96,7 @@ def get_db_news_by_country(country_code, limit=15):
                 'description': item.get('resumen', item.get('contenido', '')),
                 'url': item.get('url_original', ''),
                 'urlToImage': item.get('imagen'),
+                'imagen': item.get('imagen'),  # También incluye para fallback
                 'publishedAt': item.get('fecha_publicacion'),
                 'source': {'id': None, 'name': item.get('source_name', 'BD Local')},
                 'content': item.get('contenido', ''),
