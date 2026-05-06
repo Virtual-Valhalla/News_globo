@@ -4,8 +4,11 @@ An interactive 3D globe that lets users click any country to view real-time news
 
 ## Run & Operate
 
-- **Run**: `python app.py` (dev) or `gunicorn --bind=0.0.0.0:5000 --reuse-port app:app` (prod)
-- **Required env vars**: `NEWS_API_KEY` — one or more NewsAPI.org keys, comma-separated for rotation
+- **Run**: `bash sync_github.sh & python app.py` (via "Start application" workflow — sync daemon starts automatically)
+- **Prod**: `gunicorn --bind=0.0.0.0:5000 --reuse-port app:app`
+- **Required secrets**: `NEWS_API_KEY` — one or more NewsAPI.org keys, comma-separated for rotation
+- **Required secrets**: `GITHUB_TOKEN` — GitHub fine-grained PAT with Contents read/write on this repo (for auto-sync)
+- **GitHub sync**: Runs automatically every 300 s in the background; pushes any unpushed commits to `origin/main`. Token is never written to `.git/config` — passed as a one-shot authenticated URL per push.
 
 ## Stack
 
@@ -66,6 +69,9 @@ _Populate as you build_
 - `NEWS_API_KEY` must be set as a Replit Secret before news fetching works
 - Multiple keys (comma-separated) are recommended to avoid rate limits
 - JS files are vanilla globals — load order in `index.html` is significant
+- `GITHUB_TOKEN` must have Contents read/write on the `News_globo` repo; a classic PAT with `repo` scope also works
+- GitHub sync daemon logs appear in the "Start application" workflow console (prefixed `[github-sync]`)
+- The "GitHub Sync" workflow in the panel is a one-shot manual alternative; the daemon in "Start application" is what runs automatically
 
 ## Pointers
 
