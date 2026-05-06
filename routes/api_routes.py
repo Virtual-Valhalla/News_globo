@@ -6,6 +6,7 @@ from flask import Blueprint, jsonify, request
 import services.news_service as svc
 from config import (CACHE_TTL_COUNTRY, CACHE_TTL_GLOBAL,
                     COUNTRY_NAMES, NEWSAPI_COUNTRIES)
+from models import database as db
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,37 @@ def fetch_everything_with_fallback(country_name, category=''):
     return articles, 2
 
 
+def get_db_news_by_country(country_code, limit=15):
+    """Obtén noticias de la BD que coincidan con el país (por fuente o búsqueda)."""
+    try:
+        # Obtén el nombre del país
+        country_name = COUNTRY_NAMES.get(country_code, country_code.title())
+        
+        # Busca noticias en la BD (del scraping)
+        # Aquí simplemente devolvemos las más recientes de todas las fuentes
+        news_items = db.get_news(limit=limit)
+        
+        # Convierte formato de BD a formato NewsAPI para compatibilidad
+        articles = []
+        for item in news_items:
+            articles.append({
+                'title': item.get('titulo', 'Sin título'),
+                'description': item.get('resumen', item.get('contenido', '')),
+                'url': item.get('url_original', ''),
+                'urlToImage': item.get('imagen'),
+                'publishedAt': item.get('fecha_publicacion'),
+                'source': {'id': None, 'name': item.get('source_name', 'BD Local')},
+                'content': item.get('contenido', ''),
+                'db_source': True,  # Marcar que viene de BD
+            })
+        
+        logger.info(f"📚 BD: {len(articles)} noticias encontradas para '{country_code}'")
+        return articles
+    except Exception as e:
+        logger.warning(f"⚠️ Error al consultar BD: {e}")
+        return []
+
+
 @api_bp.route('/country-news')
 def country_news():
     code     = request.args.get('country',  'world').lower().strip()
@@ -103,40 +135,82 @@ def country_news():
 
     try:
         scan_mode = 'direct'
+        articles = []
+        
+        # ────────────────────────────────────────────────────────────────
+        # PASO 1: Intenta obtener noticias de la BASE DE DATOS (scraping)
+        # ────────────────────────────────────────────────────────────────
+        db_articles = get_db_news_by_country(code, limit=20)
+        if db_articles:
+            articles.extend(db_articles)
+            scan_mode = 'database-primary'
+            logger.info(f"✅ Usando noticias de BD para '{code}' ({len(db_articles)} artículos)")
 
-        # ── Ruta Global ───────────────────────────────────────────────────────
-        if code in ('world', 'global'):
-            cat_param = f'&category={category}' if category else ''
-            url = (f'https://newsapi.org/v2/top-headlines'
-                   f'?language=en&pageSize=15{cat_param}&apiKey={{api_key}}')
-            data     = svc.fetch_url(url)
-            articles = svc.filter_articles(data.get('articles', []))
-            ttl      = CACHE_TTL_GLOBAL
+        # ────────────────────────────────────────────────────────────────
+        # PASO 2: Complementa con noticias de NewsAPI si no hay suficientes
+        # ────────────────────────────────────────────────────────────────
+        try:
+            api_articles = None
+            ttl = CACHE_TTL_COUNTRY
 
-        # ── Ruta A: ISO compatible → top-headlines directo ───────────────────
-        elif code in NEWSAPI_COUNTRIES:
-            cat_param = f'&category={category}' if category else ''
-            url = (f'https://newsapi.org/v2/top-headlines'
-                   f'?country={code}&pageSize=15{cat_param}&apiKey={{api_key}}')
-            data     = svc.fetch_url(url)
-            articles = svc.filter_articles(data.get('articles', []))
-            ttl      = CACHE_TTL_COUNTRY
+            # ── Ruta Global ───────────────────────────────────────────────────────
+            if code in ('world', 'global'):
+                cat_param = f'&category={category}' if category else ''
+                url = (f'https://newsapi.org/v2/top-headlines'
+                       f'?language=en&pageSize=15{cat_param}&apiKey={{api_key}}')
+                data     = svc.fetch_url(url)
+                api_articles = svc.filter_articles(data.get('articles', []))
+                ttl      = CACHE_TTL_GLOBAL
+                if articles:
+                    scan_mode = 'database-global-hybrid'
 
-            # Fallback: top-headlines vacío → everything tiered
-            if not articles:
-                country_name = COUNTRY_NAMES.get(code, code.upper())
-                logger.info(f"🔄 top-headlines vacío para '{code}' → everything tiered para '{country_name}'")
-                articles, tier = fetch_everything_with_fallback(country_name, category)
-                scan_mode = f'deep-scan-t{tier}'
+            # ── Ruta A: ISO compatible → top-headlines directo ───────────────────
+            elif code in NEWSAPI_COUNTRIES:
+                cat_param = f'&category={category}' if category else ''
+                url = (f'https://newsapi.org/v2/top-headlines'
+                       f'?country={code}&pageSize=15{cat_param}&apiKey={{api_key}}')
+                data     = svc.fetch_url(url)
+                api_articles = svc.filter_articles(data.get('articles', []))
+                ttl      = CACHE_TTL_COUNTRY
 
-        # ── Ruta C: ISO no compatible → everything tiered ─────────────────────
-        else:
-            country_name = COUNTRY_NAMES.get(code, code.replace('_', ' ').title())
-            logger.info(f"🌍 ISO '{code}' no soportado → Deep-Scan para '{country_name}'")
-            articles, tier = fetch_everything_with_fallback(country_name, category)
-            scan_mode = f'deep-scan-t{tier}'
-            ttl       = CACHE_TTL_COUNTRY
+                # Fallback: top-headlines vacío → everything tiered
+                if not api_articles:
+                    country_name = COUNTRY_NAMES.get(code, code.upper())
+                    logger.info(f"🔄 top-headlines vacío para '{code}' → everything tiered para '{country_name}'")
+                    api_articles, tier = fetch_everything_with_fallback(country_name, category)
+                    if articles:
+                        scan_mode = f'database-deep-scan-t{tier}'
+                    else:
+                        scan_mode = f'deep-scan-t{tier}'
 
+            # ── Ruta C: ISO no compatible → everything tiered ─────────────────────
+            else:
+                country_name = COUNTRY_NAMES.get(code, code.replace('_', ' ').title())
+                logger.info(f"🌍 ISO '{code}' no soportado → Deep-Scan para '{country_name}'")
+                api_articles, tier = fetch_everything_with_fallback(country_name, category)
+                if articles:
+                    scan_mode = f'database-deep-scan-t{tier}'
+                else:
+                    scan_mode = f'deep-scan-t{tier}'
+
+            # Combina noticias de API si no hay suficientes en BD
+            if api_articles:
+                if len(articles) < 15:
+                    articles.extend(api_articles[:15 - len(articles)])
+                    if scan_mode == 'database-primary':
+                        scan_mode = 'database-api-hybrid'
+
+        except Exception as e:
+            logger.warning(f"⚠️ Error al obtener noticias de API: {e}")
+            # Si la API falla pero tenemos noticias de BD, continuamos con las de BD
+            if articles:
+                logger.info(f"✅ Continuando solo con noticias de BD ({len(articles)} artículos)")
+            else:
+                raise
+
+        # ────────────────────────────────────────────────────────────────
+        # RESULTADO FINAL
+        # ────────────────────────────────────────────────────────────────
         if not articles:
             label = COUNTRY_NAMES.get(code, code.replace('_', ' ').title())
             return jsonify({
