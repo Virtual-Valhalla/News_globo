@@ -1,26 +1,37 @@
 #!/bin/bash
-set -e
 
-if [ -z "$GITHUB_TOKEN" ]; then
-  echo "ERROR: GITHUB_TOKEN secret is not set. Add it in Replit Secrets to enable GitHub sync."
-  exit 1
-fi
+REPO_URL="https://github.com/Virtual-Valhalla/News_globo.git"
+BRANCH="main"
+SYNC_INTERVAL=300
 
-REMOTE_URL="https://${GITHUB_TOKEN}@github.com/Virtual-Valhalla/News_globo.git"
+do_sync() {
+  if [ -z "$GITHUB_TOKEN" ]; then
+    echo "[github-sync] ERROR: GITHUB_TOKEN secret is not set. Skipping sync."
+    return 1
+  fi
 
-git remote set-url origin "$REMOTE_URL"
+  git config user.email "replit-sync@replit.com"
+  git config user.name "Replit Sync"
 
-git config user.email "replit-sync@replit.com"
-git config user.name "Replit Sync"
+  AHEAD=$(git rev-list "origin/${BRANCH}..HEAD" --count 2>/dev/null || echo "0")
 
-AHEAD=$(git rev-list origin/main..HEAD --count 2>/dev/null || echo "0")
+  if [ "$AHEAD" -eq "0" ]; then
+    echo "[github-sync] $(date '+%H:%M:%S') Already in sync. Nothing to push."
+  else
+    echo "[github-sync] $(date '+%H:%M:%S') Pushing ${AHEAD} commit(s) to GitHub..."
+    AUTH_URL="https://x-token:${GITHUB_TOKEN}@github.com/Virtual-Valhalla/News_globo.git"
+    if git push "$AUTH_URL" "${BRANCH}:${BRANCH}" 2>&1 | sed 's|x-token:[^@]*@|x-token:***@|g'; then
+      echo "[github-sync] $(date '+%H:%M:%S') Push succeeded."
+    else
+      echo "[github-sync] $(date '+%H:%M:%S') Push failed. Will retry in ${SYNC_INTERVAL}s."
+    fi
+  fi
+}
 
-if [ "$AHEAD" -eq "0" ]; then
-  echo "Already in sync with GitHub. Nothing to push."
-else
-  echo "Pushing $AHEAD commit(s) to GitHub..."
-  git push origin main
-  echo "GitHub sync complete."
-fi
+echo "[github-sync] Starting automatic GitHub sync daemon (interval: ${SYNC_INTERVAL}s)."
+do_sync
 
-git remote set-url origin "https://github.com/Virtual-Valhalla/News_globo"
+while true; do
+  sleep "$SYNC_INTERVAL"
+  do_sync
+done
