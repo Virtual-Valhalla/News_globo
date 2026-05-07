@@ -14,7 +14,6 @@ Para evitar el consumo de créditos del "Replit Agent", sigue estrictamente este
 
 ### 2. Clonación Soberana vía Shell
 Abre la **Shell** (herramienta de terminal) y ejecuta:
-```
 
 # Elimina archivos visibles
 ```bash
@@ -37,7 +36,7 @@ En la misma Shell, instala el stack tecnológico sin asistencia:
 ```bash
 pip install -r requirements.txt
 ```
-
+```
 ### 4. Inyección de Secretos (Variables de Entorno)
 Usa la herramienta **Secrets** (icono de candado) en la barra lateral. No permitas que el Agente las gestione por ti. Añade:
 * `NEWS_API_KEY`: Tu clave de NewsAPI.org (opcional para live data).
