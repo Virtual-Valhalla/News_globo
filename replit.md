@@ -14,15 +14,19 @@ Para evitar el consumo de créditos del "Replit Agent", sigue estrictamente este
 
 ### 2. Clonación Soberana vía Shell
 Abre la **Shell** (herramienta de terminal) y ejecuta:
+```
+
 # Elimina archivos visibles
 ```bash
 rm -rf *
 ```
-```bash
+
 # Elimina archivos ocultos que bloquean el clone
 ```bash
 rm -rf .* 2>/dev/null
 ```
+
+### 2. Clonación Soberana vía Shell
 ```bash
 git clone https://github.com/Virtual-Valhalla/News_globo.git .
 ```
