@@ -344,24 +344,41 @@ def seed():
     init_db()
     inserted = 0
     skipped  = 0
+    updated  = 0
     with get_db() as conn:
         # Get existing URLs to avoid re-inserting defaults
         existing = {r[0] for r in conn.execute("SELECT url FROM sources").fetchall()}
         for row in SOURCES:
-            nombre, url, tipo = row[0], row[1], row[2]
+            nombre   = row[0]
+            url      = row[1]
+            tipo     = row[2]
+            lang     = row[3] if len(row) > 3 else 'en'
+            categoria = row[4] if len(row) > 4 else 'General'
+
             if url in existing:
+                # Update categoria and lang for existing sources (in case they were empty)
+                try:
+                    conn.execute(
+                        "UPDATE sources SET categoria = ?, lang = ? WHERE url = ? AND (categoria IS NULL OR categoria = '' OR categoria = 'General')",
+                        (categoria, lang, url)
+                    )
+                    if conn.execute("SELECT changes()").fetchone()[0] > 0:
+                        updated += 1
+                except Exception:
+                    pass
                 skipped += 1
                 continue
             try:
                 conn.execute(
-                    "INSERT OR IGNORE INTO sources (nombre, url, tipo, activa) VALUES (?,?,?,1)",
-                    (nombre, url, tipo)
+                    "INSERT OR IGNORE INTO sources (nombre, url, tipo, activa, lang, categoria) VALUES (?,?,?,1,?,?)",
+                    (nombre, url, tipo, lang, categoria)
                 )
                 inserted += 1
                 existing.add(url)
             except Exception as e:
                 print(f"  ⚠️  Error insertando '{nombre}': {e}")
     print(f"\n✅ Fuentes insertadas:  {inserted}")
+    print(f"🔄 Fuentes actualizadas: {updated}")
     print(f"⏭️  Ya existían:         {skipped}")
     print(f"📊 Total en DB:         {inserted + skipped}")
 

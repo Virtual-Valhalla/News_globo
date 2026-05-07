@@ -60,14 +60,52 @@ def _extract_image_from_item(item):
     return ""
 
 
+def _infer_categoria_from_url(url: str) -> str:
+    """
+    Try to infer category from the article URL path.
+    Returns a Spanish category name or 'General'.
+    """
+    url_lower = url.lower()
+    mapping = {
+        "technology": "Tecnología",
+        "tech": "Tecnología",
+        "science": "Ciencia",
+        "health": "Salud",
+        "sport": "Deportes",
+        "sports": "Deportes",
+        "business": "Economía",
+        "economy": "Economía",
+        "finance": "Economía",
+        "money": "Economía",
+        "entertainment": "Entretenimiento",
+        "culture": "Entretenimiento",
+        "arts": "Entretenimiento",
+        "politics": "Política",
+        "world": "General",
+        "news": "General",
+        "environment": "Medio Ambiente",
+        "climate": "Medio Ambiente",
+        "security": "Ciberseguridad",
+        "cyber": "Ciberseguridad",
+    }
+    for keyword, categoria in mapping.items():
+        if f"/{keyword}" in url_lower or f"/{keyword}/" in url_lower:
+            return categoria
+    return "General"
+
+
 def scrape_rss(source: dict) -> list:
     """
     Fetch and parse an RSS feed.
-    Returns list of normalized news dicts.
+    Returns list of normalized news dicts with 'categoria' field.
+    The category comes from the source record; if missing it tries
+    to infer it from each article's URL.
     """
     url = source["url"]
     source_id = source["id"]
-    logger.info("📡 RSS fetch: %s", url)
+    # Category defined at source level (from seed_sources.py)
+    source_categoria = source.get("categoria") or "General"
+    logger.info("📡 RSS fetch: %s [cat: %s]", url, source_categoria)
 
     try:
         resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=12)
@@ -96,6 +134,12 @@ def scrape_rss(source: dict) -> list:
                 url_original = link_tag["href"].strip()
             else:
                 url_original = ""
+
+            # Category: use source-level if available, otherwise infer from URL
+            if source_categoria and source_categoria != "General":
+                categoria = source_categoria
+            else:
+                categoria = _infer_categoria_from_url(url_original) if url_original else "General"
 
             # Description / summary
             desc_tag = item.find("description") or item.find("summary")
@@ -132,6 +176,7 @@ def scrape_rss(source: dict) -> list:
                 "fuente_id":         source_id,
                 "url_original":      url_original,
                 "multimedia":        multimedia,
+                "categoria":         categoria,
             })
         except Exception as e:
             logger.warning("⚠️ Error parsing RSS item: %s", e)

@@ -7,12 +7,26 @@ import services.news_service as svc
 from config import (CACHE_TTL_COUNTRY, CACHE_TTL_GLOBAL,
                     COUNTRY_NAMES, NEWSAPI_COUNTRIES)
 from models import database as db
+from services.content_extractor import content_extractor
 
 logger = logging.getLogger(__name__)
 
 api_bp = Blueprint('api', __name__)
 
 VALID_CATEGORIES = {'business', 'entertainment', 'general', 'health', 'science', 'sports', 'technology'}
+
+# Map from NewsAPI category names (English) to Spanish DB categories
+CATEGORY_MAP = {
+    'technology':     'Tecnología',
+    'business':       'Economía',
+    'sports':         'Deportes',
+    'entertainment':  'Entretenimiento',
+    'health':         'Salud',
+    'science':        'Ciencia',
+    'politics':       'Política',
+    'general':        'General',
+    '':               None,  # no filter
+}
 
 
 def _quote_name(country_name):
@@ -21,10 +35,6 @@ def _quote_name(country_name):
 
 
 def build_everything_tier1(country_name, category=''):
-    """
-    Tier 1 (specific): country name in title + optional AND category, last 7 days.
-    No language filter so local-language articles are included.
-    """
     since = (datetime.now(timezone.utc) - timedelta(days=7)).strftime('%Y-%m-%dT%H:%M:%S')
     base  = _quote_name(country_name)
     if category and category != 'general':
@@ -39,10 +49,6 @@ def build_everything_tier1(country_name, category=''):
 
 
 def build_everything_tier2(country_name):
-    """
-    Tier 2 (broad): country name only, no searchIn restriction, no language filter,
-    last 30 days. Wide net to ensure something is always returned.
-    """
     since = (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S')
     q = requests.utils.quote(_quote_name(country_name))
     return (
@@ -52,23 +58,11 @@ def build_everything_tier2(country_name):
 
 
 def fetch_everything_with_fallback(country_name, category=''):
-    """
-    Tiered fetch for the /everything endpoint.
-
-    Tier 1: "{Country}" [AND category] in title — specific, 7 days.
-    Tier 2: "{Country}" anywhere — broad, 30 days, no language filter.
-
-    Falls through to Tier 2 only when Tier 1 returns 0 articles, so most
-    supported-category + large-country combos only use 1 API call.
-    Returns (articles, scan_tier).
-    """
     url1 = build_everything_tier1(country_name, category)
     data = svc.fetch_url(url1)
     articles = svc.filter_articles(data.get('articles', []))
-
     if articles:
         return articles, 1
-
     logger.info(
         f"⬇️ Tier 1 vacío para '{country_name}' [{category}] → "
         f"Tier 2: búsqueda amplia 30 días sin filtro de idioma"
@@ -79,31 +73,34 @@ def fetch_everything_with_fallback(country_name, category=''):
     return articles, 2
 
 
-def get_db_news_by_country(country_code, limit=15):
-    """Obtén noticias de la BD que coincidan con el país (por fuente o búsqueda)."""
+def get_db_news_by_country(country_code, category='', limit=200):
+    """
+    Fetch news from DB.
+    - category: English NewsAPI name ('technology', 'sports', etc.) — mapped to Spanish DB value.
+    - No artificial cap: limit defaults to 200.
+    """
     try:
-        # Obtén el nombre del país
-        country_name = COUNTRY_NAMES.get(country_code, country_code.title())
-        
-        # Busca noticias en la BD (del scraping)
-        news_items = db.get_news(limit=limit)
-        
-        # Convierte formato de BD a formato NewsAPI para compatibilidad
+        # Map English API category to Spanish DB category
+        db_categoria = CATEGORY_MAP.get(category, None) if category else None
+
+        news_items = db.get_news(categoria=db_categoria, limit=limit)
+
         articles = []
         for item in news_items:
             articles.append({
-                'title': item.get('titulo', 'Sin título'),
-                'description': item.get('resumen', item.get('contenido', '')),
-                'url': item.get('url_original', ''),
-                'urlToImage': item.get('imagen'),
-                'imagen': item.get('imagen'),  # También incluye para fallback
+                'title':       item.get('titulo', 'Sin título'),
+                'description': item.get('resumen') or item.get('contenido', ''),
+                'url':         item.get('url_original', ''),
+                'urlToImage':  item.get('imagen') or None,
+                'imagen':      item.get('imagen') or None,
                 'publishedAt': item.get('fecha_publicacion'),
-                'source': {'id': None, 'name': item.get('source_name', 'BD Local')},
-                'content': item.get('contenido', ''),
-                'db_source': True,  # Marcar que viene de BD
+                'source':      {'id': None, 'name': item.get('source_name', 'BD Local')},
+                'content':     item.get('contenido', ''),
+                'categoria':   item.get('categoria', 'General'),
+                'db_source':   True,
             })
-        
-        logger.info(f"📚 BD: {len(articles)} noticias encontradas para '{country_code}'")
+
+        logger.info(f"📚 BD: {len(articles)} noticias para '{country_code}' [cat={db_categoria}]")
         return articles
     except Exception as e:
         logger.warning(f"⚠️ Error al consultar BD: {e}")
@@ -136,64 +133,48 @@ def country_news():
     try:
         scan_mode = 'direct'
         articles = []
-        
-        # ────────────────────────────────────────────────────────────────
-        # PASO 1: Intenta obtener noticias de la BASE DE DATOS (scraping)
-        # ────────────────────────────────────────────────────────────────
-        db_articles = get_db_news_by_country(code, limit=20)
+
+        # ── PASO 1: BD (scraping) — filtrada por categoría, sin límite artificial ──
+        db_articles = get_db_news_by_country(code, category=category, limit=200)
         if db_articles:
             articles.extend(db_articles)
             scan_mode = 'database-primary'
-            logger.info(f"✅ Usando noticias de BD para '{code}' ({len(db_articles)} artículos)")
+            logger.info(f"✅ BD para '{code}' cat='{category}': {len(db_articles)} artículos")
 
-        # ────────────────────────────────────────────────────────────────
-        # PASO 2: Complementa con noticias de NewsAPI si no hay suficientes
-        # ────────────────────────────────────────────────────────────────
+        # ── PASO 2: Complementa con NewsAPI si no hay suficientes ──────────────────
         try:
             api_articles = None
             ttl = CACHE_TTL_COUNTRY
 
-            # ── Ruta Global ───────────────────────────────────────────────────────
             if code in ('world', 'global'):
                 cat_param = f'&category={category}' if category else ''
                 url = (f'https://newsapi.org/v2/top-headlines'
                        f'?language=en&pageSize=15{cat_param}&apiKey={{api_key}}')
-                data     = svc.fetch_url(url)
+                data         = svc.fetch_url(url)
                 api_articles = svc.filter_articles(data.get('articles', []))
-                ttl      = CACHE_TTL_GLOBAL
+                ttl          = CACHE_TTL_GLOBAL
                 if articles:
                     scan_mode = 'database-global-hybrid'
 
-            # ── Ruta A: ISO compatible → top-headlines directo ───────────────────
             elif code in NEWSAPI_COUNTRIES:
                 cat_param = f'&category={category}' if category else ''
                 url = (f'https://newsapi.org/v2/top-headlines'
                        f'?country={code}&pageSize=15{cat_param}&apiKey={{api_key}}')
-                data     = svc.fetch_url(url)
+                data         = svc.fetch_url(url)
                 api_articles = svc.filter_articles(data.get('articles', []))
-                ttl      = CACHE_TTL_COUNTRY
-
-                # Fallback: top-headlines vacío → everything tiered
+                ttl          = CACHE_TTL_COUNTRY
                 if not api_articles:
                     country_name = COUNTRY_NAMES.get(code, code.upper())
-                    logger.info(f"🔄 top-headlines vacío para '{code}' → everything tiered para '{country_name}'")
+                    logger.info(f"🔄 top-headlines vacío → everything tiered para '{country_name}'")
                     api_articles, tier = fetch_everything_with_fallback(country_name, category)
-                    if articles:
-                        scan_mode = f'database-deep-scan-t{tier}'
-                    else:
-                        scan_mode = f'deep-scan-t{tier}'
+                    scan_mode = f'database-deep-scan-t{tier}' if articles else f'deep-scan-t{tier}'
 
-            # ── Ruta C: ISO no compatible → everything tiered ─────────────────────
             else:
                 country_name = COUNTRY_NAMES.get(code, code.replace('_', ' ').title())
                 logger.info(f"🌍 ISO '{code}' no soportado → Deep-Scan para '{country_name}'")
                 api_articles, tier = fetch_everything_with_fallback(country_name, category)
-                if articles:
-                    scan_mode = f'database-deep-scan-t{tier}'
-                else:
-                    scan_mode = f'deep-scan-t{tier}'
+                scan_mode = f'database-deep-scan-t{tier}' if articles else f'deep-scan-t{tier}'
 
-            # Combina noticias de API si no hay suficientes en BD
             if api_articles:
                 if len(articles) < 15:
                     articles.extend(api_articles[:15 - len(articles)])
@@ -202,15 +183,12 @@ def country_news():
 
         except Exception as e:
             logger.warning(f"⚠️ Error al obtener noticias de API: {e}")
-            # Si la API falla pero tenemos noticias de BD, continuamos con las de BD
             if articles:
                 logger.info(f"✅ Continuando solo con noticias de BD ({len(articles)} artículos)")
             else:
                 raise
 
-        # ────────────────────────────────────────────────────────────────
-        # RESULTADO FINAL
-        # ────────────────────────────────────────────────────────────────
+        # ── RESULTADO FINAL ────────────────────────────────────────────────────────
         if not articles:
             label = COUNTRY_NAMES.get(code, code.replace('_', ' ').title())
             return jsonify({
@@ -248,12 +226,67 @@ def country_news():
                         'scan_mode': 'error'}), 500
 
 
+def _db_fallback(url: str) -> dict | None:
+    """
+    Return article data from the local DB (clean RSS content, no scraping errors).
+    Returns None if the article isn't in the DB.
+    """
+    stored = db.get_news_by_url(url)
+    if not stored:
+        return None
+    contenido = stored.get("contenido") or stored.get("resumen") or ""
+    return {
+        "titulo":       stored.get("titulo", ""),
+        "contenido":    contenido,
+        "resumen":      stored.get("resumen", ""),
+        "imagen":       stored.get("imagen", ""),
+        "multimedia":   stored.get("multimedia", []),
+        "url_original": url,
+        "_source":      "db",
+    }
+
+
 @api_bp.route('/article')
 def get_article():
+    """
+    Extracts full article content, media, and image.
+    Priority:
+      1. Live scrape via ContentExtractor (og:image, full paragraphs, multimedia)
+      2. DB fallback — clean RSS content stored at ingest time (no scraping errors)
+    Response: titulo, contenido, resumen, imagen, multimedia (list), url_original
+    """
     url = request.args.get('url')
     if not url:
         return jsonify({'error': 'Falta URL'}), 400
-    return jsonify(svc.extract_article(url))
+
+    try:
+        data = content_extractor.extract(url)
+
+        # If extraction was blocked (403/timeout/etc.), fall back to DB content
+        if data.get("_blocked") or not data.get("contenido"):
+            if data.get("_blocked"):
+                logger.info("🔄 Extracción bloqueada → usando contenido de BD para %s", url)
+            fallback = _db_fallback(url)
+            if fallback:
+                # Keep better image/multimedia from live fetch if available
+                if not data.get("imagen"):
+                    data["imagen"] = fallback["imagen"]
+                if not data.get("multimedia"):
+                    data["multimedia"] = fallback["multimedia"]
+                data["contenido"] = fallback["contenido"]
+                data["resumen"]   = data["resumen"] or fallback["resumen"]
+                data["titulo"]    = data["titulo"]  or fallback["titulo"]
+            data.pop("_blocked", None)
+
+        data.pop("_blocked", None)
+        return jsonify(data)
+
+    except Exception as e:
+        logger.warning("⚠️ Error extrayendo artículo %s: %s", url, e)
+        fallback = _db_fallback(url)
+        if fallback:
+            return jsonify(fallback)
+        return jsonify(svc.extract_article(url))
 
 
 @api_bp.route('/cache-status')

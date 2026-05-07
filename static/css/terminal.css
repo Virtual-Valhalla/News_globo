@@ -505,6 +505,31 @@
     padding-left: 10px;
 }
 
+/* ── Full article content area ──────────────────────────────────────── */
+.reader-full-content {
+    margin: 0 14px 10px;
+}
+
+.reader-content-divider {
+    color: #00ffff44;
+    font-size: 0.6em;
+    letter-spacing: 3px;
+    text-align: center;
+    margin: 12px 0 8px;
+    border-top: 1px solid #00ffff22;
+    padding-top: 8px;
+}
+
+.reader-content-text {
+    color: #99cccc;
+    font-size: 0.73em;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-left: 2px solid #00ffff22;
+    padding-left: 10px;
+}
+
 /* ── Error box & retry button ───────────────────────────────────────── */
 .error-box {
     background: rgba(255, 0, 0, 0.1);

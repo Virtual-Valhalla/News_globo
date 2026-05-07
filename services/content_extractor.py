@@ -111,13 +111,15 @@ class ContentExtractor:
 
     @staticmethod
     def _error(url, message):
+        logger.warning("🚫 Extracción bloqueada (%s): %s", url, message)
         return {
-            "titulo":       "Error",
-            "contenido":    message,
+            "titulo":       "",
+            "contenido":    "",
             "resumen":      "",
             "imagen":       "",
             "multimedia":   [],
             "url_original": url,
+            "_blocked":     True,
         }
 
 

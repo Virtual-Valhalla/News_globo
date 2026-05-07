@@ -54,25 +54,49 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_noticias_fecha   ON noticias(fecha_publicacion DESC);
             CREATE INDEX IF NOT EXISTS idx_sources_activa   ON sources(activa);
         """)
+        # Add columns if they don't exist yet (safe migrations)
+        _migrate(conn)
         _seed_sources(conn)
     logger.info("✅ Base de datos inicializada en %s", DB_PATH)
 
 
+def _migrate(conn):
+    """Safe schema migrations — add new columns if they don't exist."""
+    existing_sources_cols = {
+        row[1] for row in conn.execute("PRAGMA table_info(sources)").fetchall()
+    }
+    existing_noticias_cols = {
+        row[1] for row in conn.execute("PRAGMA table_info(noticias)").fetchall()
+    }
+
+    if "categoria" not in existing_sources_cols:
+        conn.execute("ALTER TABLE sources ADD COLUMN categoria TEXT DEFAULT 'General'")
+        logger.info("✅ Columna 'categoria' añadida a sources")
+
+    if "lang" not in existing_sources_cols:
+        conn.execute("ALTER TABLE sources ADD COLUMN lang TEXT DEFAULT 'en'")
+        logger.info("✅ Columna 'lang' añadida a sources")
+
+    if "categoria" not in existing_noticias_cols:
+        conn.execute("ALTER TABLE noticias ADD COLUMN categoria TEXT DEFAULT 'General'")
+        logger.info("✅ Columna 'categoria' añadida a noticias")
+
+
 def _seed_sources(conn):
     defaults = [
-        ("BBC News (RSS)",      "http://feeds.bbci.co.uk/news/rss.xml",             "rss"),
-        ("Reuters (RSS)",       "https://feeds.reuters.com/reuters/topNews",          "rss"),
-        ("Al Jazeera (RSS)",    "https://www.aljazeera.com/xml/rss/all.xml",         "rss"),
-        ("CNN (RSS)",           "http://rss.cnn.com/rss/edition.rss",                "rss"),
-        ("El País (RSS)",       "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada", "rss"),
+        ("BBC News (RSS)",      "http://feeds.bbci.co.uk/news/rss.xml",             "rss", "en", "General"),
+        ("Reuters (RSS)",       "https://feeds.reuters.com/reuters/topNews",          "rss", "en", "General"),
+        ("Al Jazeera (RSS)",    "https://www.aljazeera.com/xml/rss/all.xml",         "rss", "en", "General"),
+        ("CNN (RSS)",           "http://rss.cnn.com/rss/edition.rss",                "rss", "en", "General"),
+        ("El País (RSS)",       "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada", "rss", "es", "General"),
     ]
     existing = conn.execute("SELECT url FROM sources").fetchall()
     existing_urls = {r["url"] for r in existing}
-    for nombre, url, tipo in defaults:
+    for nombre, url, tipo, lang, categoria in defaults:
         if url not in existing_urls:
             conn.execute(
-                "INSERT OR IGNORE INTO sources (nombre, url, tipo, activa) VALUES (?,?,?,1)",
-                (nombre, url, tipo)
+                "INSERT OR IGNORE INTO sources (nombre, url, tipo, activa, lang, categoria) VALUES (?,?,?,1,?,?)",
+                (nombre, url, tipo, lang, categoria)
             )
 
 
@@ -104,7 +128,7 @@ def create_source(nombre, url, tipo="rss", activa=True):
 
 
 def update_source(source_id, **kwargs):
-    allowed = {"nombre", "url", "tipo", "activa"}
+    allowed = {"nombre", "url", "tipo", "activa", "categoria", "lang"}
     fields = {k: v for k, v in kwargs.items() if k in allowed}
     if not fields:
         return get_source_by_id(source_id)
@@ -136,8 +160,9 @@ def upsert_news(items):
             try:
                 conn.execute(
                     """INSERT OR IGNORE INTO noticias
-                       (titulo, contenido, resumen, imagen, fecha_publicacion, fuente_id, url_original, multimedia)
-                       VALUES (?,?,?,?,?,?,?,?)""",
+                       (titulo, contenido, resumen, imagen, fecha_publicacion,
+                        fuente_id, url_original, multimedia, categoria)
+                       VALUES (?,?,?,?,?,?,?,?,?)""",
                     (
                         item.get("titulo"),
                         item.get("contenido"),
@@ -147,6 +172,7 @@ def upsert_news(items):
                         item.get("fuente_id"),
                         item.get("url_original"),
                         json.dumps(item.get("multimedia", [])),
+                        item.get("categoria", "General"),
                     )
                 )
                 inserted += conn.execute("SELECT changes()").fetchone()[0]
@@ -155,19 +181,35 @@ def upsert_news(items):
     return inserted
 
 
-def get_news(source_id=None, limit=50, offset=0):
+def get_news(source_id=None, categoria=None, limit=200, offset=0):
+    """
+    Fetch news from the DB.
+    - categoria: exact match (case-insensitive). None = no filter.
+    - limit: max rows. Default 200 (no artificial cap of 20).
+    """
     with get_db() as conn:
         base = """
             SELECT n.*, s.nombre AS source_name, s.url AS source_url
             FROM noticias n
             LEFT JOIN sources s ON n.fuente_id = s.id
         """
+        conditions = []
         params = []
+
         if source_id:
-            base += " WHERE n.fuente_id = ?"
+            conditions.append("n.fuente_id = ?")
             params.append(source_id)
+
+        if categoria and categoria.lower() not in ("", "general", "all"):
+            conditions.append("LOWER(n.categoria) = LOWER(?)")
+            params.append(categoria)
+
+        if conditions:
+            base += " WHERE " + " AND ".join(conditions)
+
         base += " ORDER BY n.fecha_publicacion DESC, n.id DESC LIMIT ? OFFSET ?"
         params += [limit, offset]
+
         rows = conn.execute(base, params).fetchall()
         result = []
         for r in rows:
@@ -186,6 +228,25 @@ def get_news_by_id(news_id):
             """SELECT n.*, s.nombre AS source_name FROM noticias n
                LEFT JOIN sources s ON n.fuente_id = s.id WHERE n.id = ?""",
             (news_id,)
+        ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        try:
+            d["multimedia"] = json.loads(d.get("multimedia") or "[]")
+        except Exception:
+            d["multimedia"] = []
+        return d
+
+
+def get_news_by_url(url_original):
+    """Look up a single article by its original URL."""
+    with get_db() as conn:
+        row = conn.execute(
+            """SELECT n.*, s.nombre AS source_name FROM noticias n
+               LEFT JOIN sources s ON n.fuente_id = s.id
+               WHERE n.url_original = ?""",
+            (url_original,)
         ).fetchone()
         if not row:
             return None
