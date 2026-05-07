@@ -11,7 +11,7 @@ Para evitar el consumo de créditos del "Replit Agent", sigue estrictamente este
 * Selecciona **"Create Repl"** y busca la plantilla **"Blank Repl"** (o "Nothing"). 
 * Esto crea un contenedor vacío sin procesos de configuración de IA activos.
 
-# 2. Clonación Soberana vía Shell
+### 2. Clonación Soberana vía Shell
 Abre la **Shell** (herramienta de terminal) y ejecuta:
 
  Elimina archivos visibles
