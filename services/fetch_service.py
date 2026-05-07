@@ -1,8 +1,17 @@
 """
-FetchService — Orchestrates ingestion from all active sources.
-Dispatches to RssScraper or HtmlScraper based on source type.
-Runs each source in a thread pool for concurrency.
+services/fetch_service.py — Orquestador de ingesta desde todas las fuentes activas
+
+Responsabilidades:
+  - Despachar cada fuente al scraper correcto (RSS o HTML) según su campo 'tipo'
+  - Ejecutar las ingestas de forma concurrente usando un ThreadPoolExecutor
+  - Almacenar los artículos obtenidos llamando a upsert_news()
+  - Devolver un resumen con conteos y errores por fuente
+
+Funciones públicas:
+  fetch_all_sources(only_active)  → ingesta completa de todas las fuentes
+  fetch_source_by_id(source_id)  → ingesta de una sola fuente por ID
 """
+
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from models.database import get_all_sources, upsert_news
@@ -11,13 +20,22 @@ from scrapers.html_scraper import scrape_html
 
 logger = logging.getLogger(__name__)
 
+# Número máximo de fuentes procesadas en paralelo
 MAX_WORKERS = 5
 
 
 def fetch_all_sources(only_active=True):
     """
-    Fetch news from all (active) sources concurrently.
-    Returns summary dict with counts per source.
+    Obtiene noticias de todas las fuentes configuradas de forma concurrente.
+
+    Args:
+        only_active: si True (por defecto), solo procesa fuentes con activa=1
+
+    Returns:
+        dict con:
+          total_sources:  número de fuentes procesadas
+          total_inserted: total de artículos nuevos insertados en BD
+          results:        lista de dicts por fuente con fetched/inserted/error
     """
     sources = get_all_sources(only_active=only_active)
     if not sources:
@@ -27,6 +45,8 @@ def fetch_all_sources(only_active=True):
     results = []
     total_inserted = 0
 
+    # Procesar cada fuente en su propio hilo; as_completed() permite recoger
+    # los resultados en el orden en que terminan, no en orden de envío.
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_source = {
             executor.submit(_fetch_source, src): src
@@ -65,11 +85,17 @@ def fetch_all_sources(only_active=True):
 
 
 def fetch_source_by_id(source_id):
-    """Fetch from a single source by ID."""
+    """
+    Obtiene noticias de una sola fuente identificada por su ID.
+
+    Returns:
+        dict con source_id, source_name, tipo, fetched, inserted, error.
+        Devuelve None si la fuente no existe en la BD.
+    """
     from models.database import get_source_by_id
     source = get_source_by_id(source_id)
     if not source:
-        return None, 0, "Fuente no encontrada"
+        return None
     fetched, inserted, error = _fetch_source(source)
     return {
         "source_id":   source["id"],
@@ -82,7 +108,20 @@ def fetch_source_by_id(source_id):
 
 
 def _fetch_source(source):
-    """Dispatch to the correct scraper and upsert results. Returns (fetched, inserted, error)."""
+    """
+    Despacha una fuente al scraper correspondiente y persiste los resultados.
+
+    Lógica de despacho:
+      - tipo 'rss'      → scrape_rss()
+      - tipo 'scraping' → scrape_html()
+      - tipo desconocido → lista vacía + aviso en log
+
+    Returns:
+        Tupla (fetched, inserted, error):
+          fetched:  número de artículos extraídos del feed
+          inserted: número de artículos nuevos guardados en BD
+          error:    mensaje de error (str) o None si todo fue bien
+    """
     tipo = source.get("tipo", "rss").lower()
     try:
         if tipo == "rss":

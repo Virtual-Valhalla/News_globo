@@ -4,3 +4,9 @@ beautifulsoup4==4.14.3
 python-dotenv==1.2.2
 gunicorn
 lxml
+beautifulsoup4
+flask
+gunicorn
+lxml
+python-dotenv
+requests

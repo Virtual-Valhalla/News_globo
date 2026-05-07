@@ -1,23 +1,39 @@
 /* ══════════════════════════════════════════════════════════════════════ */
 /* READER / DATA-DECRYPTOR COMPONENT — openReader, closeReader          */
-/* Media priority: 1) Video  2) Image  3) No media                     */
+/*                                                                       */
+/* Panel lateral que muestra el contenido completo de un artículo.      */
+/* Flujo al abrir:                                                       */
+/*   1. Mostrar estructura base con los datos del listado (rápido)      */
+/*   2. Si hay imagen disponible, mostrarla de inmediato                */
+/*   3. Hacer fetch a /article?url=… para enriquecer con:               */
+/*        - Prioridad 1: vídeo embebido (YouTube, Vimeo, HTML5)         */
+/*        - Prioridad 2: imagen de mejor calidad (og:image del scraper) */
+/*        - Prioridad 3: indicador "sin media disponible"               */
+/*   4. Inyectar el texto completo o resumen del artículo               */
 /* ══════════════════════════════════════════════════════════════════════ */
 
+/**
+ * Abre el panel DATA_DECRYPTOR con el contenido del artículo.
+ * Muestra la estructura inmediatamente y enriquece en background con /article.
+ *
+ * @param {Object} article - Objeto de artículo devuelto por /country-news
+ */
 function openReader(article) {
     const reader = document.getElementById('news-reader');
     const body   = document.getElementById('reader-body');
     reader.classList.add('reader-visible');
 
+    // Formatear fecha si existe
     const pubDate    = article.publishedAt
         ? new Date(article.publishedAt).toLocaleDateString('es-ES',
             { day: 'numeric', month: 'short', year: 'numeric' })
         : '';
     const sourceName = article.source?.name || 'FUENTE DESCONOCIDA';
 
-    // Initial image from article data (may be replaced by video after fetch)
+    // Imagen provisional del listado (puede mejorarse tras el fetch)
     const imageUrl = article.urlToImage || article.imagen || null;
 
-    // Show loading state for media while we fetch the full article
+    // Renderizar la estructura base con indicador de carga para la media
     body.innerHTML = `
         <div class="reader-media-wrap reader-media-loading" id="reader-media">
             <span class="reader-media-spinner">⟳ BUSCANDO MEDIA...</span>
@@ -32,7 +48,7 @@ function openReader(article) {
         <a href="${article.url}" target="_blank" class="news-link">[ ACCEDER A FUENTE EXTERNA → ]</a>
     `;
 
-    // Show existing image immediately while fetching full content
+    // Mostrar imagen provisional mientras se carga el artículo completo
     if (imageUrl) {
         const mediaEl = document.getElementById('reader-media');
         if (mediaEl) {
@@ -42,22 +58,24 @@ function openReader(article) {
         }
     }
 
-    // Fetch full article content and upgrade media if possible
+    // ── Enriquecer con contenido completo desde el backend ────────────────────
     fetch(`/article?url=${encodeURIComponent(article.url)}`)
         .then(r => r.json())
         .then(data => {
             const mediaEl = document.getElementById('reader-media');
 
-            // ── PRIORIDAD 1: VIDEO ──────────────────────────────────────────
+            // ── PRIORIDAD 1: VÍDEO ───────────────────────────────────────────
+            // Si el extractor encontró multimedia, preferir vídeo sobre imagen
             const multimedia = Array.isArray(data.multimedia) ? data.multimedia : [];
             const videoItem  = multimedia.find(m => m.type === 'video');
 
             if (videoItem && videoItem.embed_url) {
-                const src    = videoItem.embed_url;
-                const isYT   = src.includes('youtube.com') || src.includes('youtu.be');
+                const src     = videoItem.embed_url;
+                const isYT    = src.includes('youtube.com') || src.includes('youtu.be');
                 const isVimeo = src.includes('vimeo.com');
 
                 if (isYT || isVimeo) {
+                    // Embed iframe para YouTube y Vimeo
                     if (mediaEl) {
                         mediaEl.classList.remove('reader-media-loading');
                         mediaEl.innerHTML = `
@@ -68,7 +86,7 @@ function openReader(article) {
                     }
                     logToConsole('▶ Video embebido encontrado', 'success');
                 } else {
-                    // HTML5 video
+                    // Tag <video> nativo para archivos HTML5 directos
                     if (mediaEl) {
                         mediaEl.classList.remove('reader-media-loading');
                         mediaEl.innerHTML = `
@@ -79,18 +97,19 @@ function openReader(article) {
                     logToConsole('▶ Video HTML5 encontrado', 'success');
                 }
             }
-            // ── PRIORIDAD 2: IMAGEN ─────────────────────────────────────────
+            // ── PRIORIDAD 2: IMAGEN ──────────────────────────────────────────
+            // Sin vídeo → usar imagen, mejorando a og:image del scraper si es distinta
             else {
                 const finalImage = data.imagen || imageUrl;
                 if (finalImage && mediaEl) {
                     mediaEl.classList.remove('reader-media-loading');
-                    // Only update if we have a better image from the extractor
+                    // Solo reemplazar si el scraper devolvió una imagen diferente (y mejor)
                     if (data.imagen && data.imagen !== imageUrl) {
                         mediaEl.innerHTML = `<img class="reader-image" src="${data.imagen}" alt=""
                             onerror="this.closest('.reader-media-wrap').classList.add('reader-media-empty'); this.closest('.reader-media-wrap').innerHTML='<span class=\\'reader-no-media\\'>[SIN IMAGEN DISPONIBLE]</span>'">`;
                     }
                 }
-                // ── PRIORIDAD 3: SIN MEDIA ──────────────────────────────────
+                // ── PRIORIDAD 3: SIN MEDIA ───────────────────────────────────
                 else if (!finalImage && mediaEl) {
                     mediaEl.classList.add('reader-media-empty');
                     mediaEl.innerHTML = `<span class="reader-no-media">[ SIN MEDIA DISPONIBLE ]</span>`;
@@ -98,10 +117,10 @@ function openReader(article) {
                 }
             }
 
-            // ── CONTENIDO COMPLETO ──────────────────────────────────────────
+            // ── CONTENIDO COMPLETO ────────────────────────────────────────────
+            // Prioridad: contenido largo > resumen; mínimo 30 chars para ser útil
             const contentEl = document.getElementById('reader-full-content');
             if (contentEl) {
-                // Priority: full contenido → resumen fallback → nothing
                 const contenido = data.contenido || data.content || '';
                 const resumen   = data.resumen || '';
                 const text      = (contenido.length >= resumen.length) ? contenido : resumen;
@@ -114,6 +133,7 @@ function openReader(article) {
             }
         })
         .catch(err => {
+            // En caso de error de red, mantener la imagen provisional si existe
             logToConsole(`⚠️ Error cargando artículo: ${err.message}`, 'warning');
             const mediaEl = document.getElementById('reader-media');
             if (mediaEl) {
@@ -127,6 +147,13 @@ function openReader(article) {
         });
 }
 
+/**
+ * Escapa caracteres HTML especiales para insertar texto plano como innerHTML.
+ * Convierte saltos de línea en <br> para preservar el formato del artículo.
+ *
+ * @param {string} text - Texto a escapar
+ * @returns {string} HTML seguro
+ */
 function escapeHtml(text) {
     return text
         .replace(/&/g, '&amp;')
@@ -136,10 +163,20 @@ function escapeHtml(text) {
         .replace(/\n/g, '<br>');
 }
 
+/**
+ * Cierra el panel DATA_DECRYPTOR quitando la clase 'reader-visible'.
+ */
 function closeReader() {
     document.getElementById('news-reader').classList.remove('reader-visible');
 }
 
+/**
+ * Carga un artículo en el visor legacy (#articleViewer).
+ * Esta función está mantenida por compatibilidad pero no se usa en la UI principal.
+ * El panel DATA_DECRYPTOR (openReader) es el visor activo.
+ *
+ * @param {string} url - URL del artículo a cargar
+ */
 function loadArticle(url) {
     const viewer = document.getElementById('articleViewer');
     viewer.style.display = 'block';

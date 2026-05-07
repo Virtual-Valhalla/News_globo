@@ -1,3 +1,26 @@
+"""
+models/database.py — Capa de acceso a datos SQLite
+
+Esquema principal:
+  sources  — fuentes de noticias (RSS, scraping, API)
+  noticias — artículos almacenados, con referencia a su fuente
+
+Funciones disponibles:
+  init_db()              → crea tablas, ejecuta migraciones y siembra fuentes por defecto
+  get_all_sources()      → lista todas las fuentes (o solo las activas)
+  get_source_by_id()     → busca una fuente por ID
+  create_source()        → inserta una nueva fuente
+  update_source()        → actualiza campos de una fuente existente
+  delete_source()        → elimina una fuente por ID
+  upsert_news()          → inserta artículos ignorando duplicados por url_original
+  get_news()             → consulta noticias con filtros opcionales y paginación
+  get_news_by_id()       → obtiene un artículo por ID
+  get_news_by_url()      → busca un artículo por URL original
+
+La base de datos se almacena en la ruta definida por DB_PATH
+(por defecto: news_globo.db en la raíz del proyecto).
+"""
+
 import sqlite3
 import json
 import os
@@ -6,14 +29,20 @@ from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
+# Ruta del archivo SQLite. Se puede sobreescribir con la variable DB_PATH.
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "..", "news_globo.db"))
 
 
 @contextmanager
 def get_db():
+    """
+    Context manager que abre una conexión SQLite y garantiza commit/rollback.
+    Activa WAL (Write-Ahead Logging) para mejor rendimiento en concurrencia.
+    La conexión se cierra automáticamente al salir del bloque `with`.
+    """
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
+    conn.row_factory = sqlite3.Row   # permite acceder a columnas por nombre
+    conn.execute("PRAGMA journal_mode=WAL")  # WAL mejora lecturas concurrentes
     try:
         yield conn
         conn.commit()
@@ -25,6 +54,11 @@ def get_db():
 
 
 def init_db():
+    """
+    Inicializa la base de datos al arranque de la aplicación.
+    Crea las tablas e índices si no existen, aplica migraciones seguras
+    (añade columnas nuevas sin perder datos) y siembra fuentes por defecto.
+    """
     with get_db() as conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS sources (
@@ -54,14 +88,16 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_noticias_fecha   ON noticias(fecha_publicacion DESC);
             CREATE INDEX IF NOT EXISTS idx_sources_activa   ON sources(activa);
         """)
-        # Add columns if they don't exist yet (safe migrations)
         _migrate(conn)
         _seed_sources(conn)
     logger.info("✅ Base de datos inicializada en %s", DB_PATH)
 
 
 def _migrate(conn):
-    """Safe schema migrations — add new columns if they don't exist."""
+    """
+    Migraciones seguras: añade columnas nuevas si no existen.
+    Nunca elimina ni renombra columnas existentes para preservar datos.
+    """
     existing_sources_cols = {
         row[1] for row in conn.execute("PRAGMA table_info(sources)").fetchall()
     }
@@ -83,6 +119,10 @@ def _migrate(conn):
 
 
 def _seed_sources(conn):
+    """
+    Inserta fuentes RSS predeterminadas si aún no existen en la BD.
+    Se ejecuta en cada arranque pero solo actúa si falta alguna URL.
+    """
     defaults = [
         ("BBC News (RSS)",      "http://feeds.bbci.co.uk/news/rss.xml",             "rss", "en", "General"),
         ("Reuters (RSS)",       "https://feeds.reuters.com/reuters/topNews",          "rss", "en", "General"),
@@ -100,9 +140,10 @@ def _seed_sources(conn):
             )
 
 
-# ── Sources CRUD ──────────────────────────────────────────────────────────────
+# ── CRUD de fuentes ───────────────────────────────────────────────────────────
 
 def get_all_sources(only_active=False):
+    """Devuelve todas las fuentes. Si only_active=True, filtra las inactivas."""
     with get_db() as conn:
         q = "SELECT * FROM sources"
         if only_active:
@@ -113,12 +154,14 @@ def get_all_sources(only_active=False):
 
 
 def get_source_by_id(source_id):
+    """Devuelve una fuente por su ID, o None si no existe."""
     with get_db() as conn:
         row = conn.execute("SELECT * FROM sources WHERE id = ?", (source_id,)).fetchone()
         return dict(row) if row else None
 
 
 def create_source(nombre, url, tipo="rss", activa=True):
+    """Crea una nueva fuente y devuelve el registro completo recién insertado."""
     with get_db() as conn:
         cur = conn.execute(
             "INSERT INTO sources (nombre, url, tipo, activa) VALUES (?,?,?,?)",
@@ -128,6 +171,11 @@ def create_source(nombre, url, tipo="rss", activa=True):
 
 
 def update_source(source_id, **kwargs):
+    """
+    Actualiza campos de una fuente existente.
+    Solo modifica los campos incluidos en kwargs (nombre, url, tipo, activa, categoria, lang).
+    Actualiza automáticamente el campo updated_at.
+    """
     allowed = {"nombre", "url", "tipo", "activa", "categoria", "lang"}
     fields = {k: v for k, v in kwargs.items() if k in allowed}
     if not fields:
@@ -145,15 +193,20 @@ def update_source(source_id, **kwargs):
 
 
 def delete_source(source_id):
+    """Elimina una fuente por ID. Devuelve True si se eliminó algo."""
     with get_db() as conn:
         affected = conn.execute("DELETE FROM sources WHERE id = ?", (source_id,)).rowcount
     return affected > 0
 
 
-# ── News CRUD ─────────────────────────────────────────────────────────────────
+# ── CRUD de noticias ──────────────────────────────────────────────────────────
 
 def upsert_news(items):
-    """Insert list of news dicts, ignoring duplicates by url_original."""
+    """
+    Inserta una lista de artículos en la BD, ignorando duplicados por url_original.
+    El campo multimedia se serializa a JSON antes de guardar.
+    Devuelve el número de artículos efectivamente insertados (no duplicados).
+    """
     inserted = 0
     with get_db() as conn:
         for item in items:
@@ -183,9 +236,17 @@ def upsert_news(items):
 
 def get_news(source_id=None, categoria=None, limit=200, offset=0):
     """
-    Fetch news from the DB.
-    - categoria: exact match (case-insensitive). None = no filter.
-    - limit: max rows. Default 200 (no artificial cap of 20).
+    Consulta noticias de la BD con filtros opcionales.
+
+    Args:
+        source_id: filtra por ID de fuente (None = todas las fuentes)
+        categoria: filtra por categoría exacta en español (None o 'general' = sin filtro)
+        limit:     máximo de resultados (por defecto 200)
+        offset:    paginación — número de filas a saltar
+
+    Returns:
+        Lista de dicts con datos de la noticia y nombre/URL de la fuente.
+        El campo multimedia se deserializa de JSON a lista Python.
     """
     with get_db() as conn:
         base = """
@@ -200,6 +261,7 @@ def get_news(source_id=None, categoria=None, limit=200, offset=0):
             conditions.append("n.fuente_id = ?")
             params.append(source_id)
 
+        # Ignorar el filtro si la categoría es vacía, 'general' o 'all'
         if categoria and categoria.lower() not in ("", "general", "all"):
             conditions.append("LOWER(n.categoria) = LOWER(?)")
             params.append(categoria)
@@ -223,6 +285,10 @@ def get_news(source_id=None, categoria=None, limit=200, offset=0):
 
 
 def get_news_by_id(news_id):
+    """
+    Devuelve un artículo completo por su ID, incluyendo nombre de la fuente.
+    Devuelve None si no existe. El campo multimedia se deserializa de JSON.
+    """
     with get_db() as conn:
         row = conn.execute(
             """SELECT n.*, s.nombre AS source_name FROM noticias n
@@ -240,7 +306,11 @@ def get_news_by_id(news_id):
 
 
 def get_news_by_url(url_original):
-    """Look up a single article by its original URL."""
+    """
+    Busca un artículo por su URL original.
+    Usado como fallback cuando el scraping en vivo falla o está bloqueado.
+    Devuelve None si la URL no está en la BD.
+    """
     with get_db() as conn:
         row = conn.execute(
             """SELECT n.*, s.nombre AS source_name FROM noticias n

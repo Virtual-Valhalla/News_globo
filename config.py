@@ -1,11 +1,27 @@
+"""
+config.py — Constantes globales y configuración de API keys
+
+Contiene:
+  - TTLs de caché (tiempo de vida de entradas en memoria)
+  - COUNTRY_NAMES: mapa ISO-A2 → nombre legible (usado en logs y fallbacks)
+  - NEWSAPI_COUNTRIES: conjunto de códigos con soporte nativo en top-headlines
+  - build_api_keys(): construye la lista de objetos de API key desde el entorno
+"""
+
 import os
 import logging
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL_COUNTRY = 6 * 3600
-CACHE_TTL_GLOBAL  = 4 * 3600
+# ── Tiempos de vida del caché en memoria ──────────────────────────────────────
+# Las noticias por país se mantienen 6 horas; el feed global, 4 horas.
+CACHE_TTL_COUNTRY = 6 * 3600   # 21 600 segundos
+CACHE_TTL_GLOBAL  = 4 * 3600   # 14 400 segundos
 
+# ── Mapa ISO-A2 → nombre de país en inglés ────────────────────────────────────
+# Usado para construir queries de "everything" en NewsAPI cuando top-headlines
+# no soporta el código ISO (deep-scan).
+# Nota: algunos códigos aparecen duplicados al final; Python usa el último valor.
 COUNTRY_NAMES = {
     "ae": "United Arab Emirates", "ar": "Argentina", "at": "Austria",
     "au": "Australia", "be": "Belgium", "bg": "Bulgaria", "br": "Brazil",
@@ -55,17 +71,19 @@ COUNTRY_NAMES = {
     "cv": "Cape Verde", "st": "Sao Tome and Principe", "km": "Comoros",
     "sc": "Seychelles", "mu": "Mauritius", "mw": "Malawi",
     "sz": "Eswatini", "ls": "Lesotho", "na": "Namibia", "bw": "Botswana",
-    "gh": "Ghana", "ke": "Kenya", "ug": "Uganda",
     "tj": "Tajikistan", "tm": "Turkmenistan", "kg": "Kyrgyzstan",
     "mn": "Mongolia", "bt": "Bhutan", "mv": "Maldives",
-    "br": "Brazil", "gy": "Guyana", "sr": "Suriname",
-    "tt": "Trinidad and Tobago", "jm": "Jamaica", "cu": "Cuba",
+    "gy": "Guyana", "sr": "Suriname",
+    "tt": "Trinidad and Tobago", "jm": "Jamaica",
     "ht": "Haiti", "bs": "Bahamas", "bb": "Barbados",
     "lc": "Saint Lucia", "vc": "Saint Vincent", "ag": "Antigua",
     "dm": "Dominica", "gd": "Grenada", "kn": "Saint Kitts",
-    "bz": "Belize", "mx": "Mexico",
+    "bz": "Belize",
 }
 
+# ── Países con soporte nativo en el endpoint top-headlines de NewsAPI ─────────
+# Para estos códigos se usa ?country=XX directamente.
+# Para cualquier otro código se cae al endpoint "everything" con búsqueda por nombre.
 NEWSAPI_COUNTRIES = {
     "ae","ar","at","au","be","bg","br","ca","ch","cn","co","cu","cz",
     "de","eg","fr","gb","gr","hk","hu","id","ie","il","in","it","jp",
@@ -73,7 +91,22 @@ NEWSAPI_COUNTRIES = {
     "ro","rs","ru","sa","se","sg","si","sk","th","tr","tw","ua","us","ve","za"
 }
 
+
 def build_api_keys():
+    """
+    Lee la variable de entorno NEWS_API_KEY y construye la lista de objetos de clave.
+
+    Soporta múltiples claves separadas por coma para rotación automática
+    cuando una clave supera su límite de peticiones (rate limit).
+
+    Cada objeto tiene:
+      - key:           la cadena de la API key
+      - requests_used: contador de peticiones realizadas con esta clave
+      - rate_limited:  si True, se salta esta clave en la rotación
+
+    Si no hay clave configurada, inserta un placeholder y emite una advertencia.
+    El sistema seguirá funcionando con noticias de la BD local.
+    """
     keys = []
     raw = os.environ.get("NEWS_API_KEY", "")
     for k in raw.split(","):
