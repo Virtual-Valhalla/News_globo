@@ -1,3 +1,4 @@
+guessImports = false
 modules = ["nodejs-20", "python-3.11", "python-3.12", "web"]
 [agent]
 expertMode = true
@@ -8,28 +9,43 @@ channel = "stable-25_05"
 packages = ["xcodebuild", "zlib"]
 
 [workflows]
-runButton = "Project"
+runButton = "Start"
 
 [[workflows.workflow]]
 name = "Project"
-mode = "parallel"
-author = "agent"
+mode = "sequential"
+author = 34518249
 
 [[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
+task = "shell.exec"
+args = 'find . \( -type d -name "__pycache__" -o -name "*.db" \) -exec rm -rf {} +'
+waitForPort = 5000
 
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
-
-[workflows.workflow.metadata]
-outputType = "webview"
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python seed_sources.py"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python app.py"
-waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Start"
+mode = "sequential"
+author = 34518249
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Project"
+
+[[workflows.workflow]]
+name = "Borrar archivos antes de subir a GITHUB"
+mode = "sequential"
+author = 34518249
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = 'find . \( -type d -name "__pycache__" -o -name "*.db" \) -exec rm -rf {} +'
 
 [[ports]]
 localPort = 5000

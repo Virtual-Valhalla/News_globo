@@ -2,7 +2,6 @@
 
 Este es el archivo adicional que solicitaste para blindar tu presupuesto en Replit.
 
-```markdown
 # 📉 REPLIT_OPTIMIZATION | Guía de Ahorro y Desactivación de IA
 
 Para minimizar o eliminar el gasto de "Cycles" (créditos) en Replit, aplica estas configuraciones de nivel Senior.
@@ -22,6 +21,7 @@ Asegúrate de que el archivo `.replit` tenga configurado:
 ```toml
 guessImports = false
 ```
+
 Esto evita que Replit escanee tus archivos automáticamente para intentar resolver dependencias, un proceso que a menudo dispara tareas de IA facturables.
 
 ### 4. Límites de Gasto Hard-Cap
