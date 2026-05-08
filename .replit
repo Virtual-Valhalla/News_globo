@@ -18,11 +18,6 @@ author = 34518249
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = 'find . \( -type d -name "__pycache__" -o -name "*.db" \) -exec rm -rf {} +'
-waitForPort = 5000
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "python seed_sources.py"
 
 [[workflows.workflow.tasks]]
