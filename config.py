@@ -11,6 +11,19 @@ Contiene:
 import os
 import logging
 
+import random
+
+# Lista blanca de fuentes confiables (Zero-Cost Quality)
+TRUSTED_SOURCES = ["Reuters", "BBC News", "Associated Press", "The New York Times", "CNN", "The Guardian"]
+
+# Palabras clave de alto impacto
+IMPACT_KEYWORDS = ["breaking", "urgente", "alerta", "crisis", "importante", "histórico"]
+
+# Configuración de L1 con Jitter [4, 5]
+BASE_TTL = 21600  # 6 horas en segundos
+def get_ttl_with_jitter():
+    return BASE_TTL + random.randint(-300, 300) # +/- 5 minutos
+
 logger = logging.getLogger(__name__)
 
 # ── Tiempos de vida del caché en memoria ──────────────────────────────────────

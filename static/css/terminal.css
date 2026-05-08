@@ -13,7 +13,7 @@
     border: 2px solid #00ffff;
     background: rgba(0, 0, 0, 0.7);
     padding: 12px;
-    z-index: 100;
+    z-index: 1000;
     box-shadow: 0 0 20px #00ffff;
     display: flex;
     flex-direction: column;
@@ -105,7 +105,7 @@
     border: 2px solid #ff00ff;
     background: rgba(0, 0, 0, 0.7);
     padding: 12px;
-    z-index: 10;
+    z-index: 100;
     box-shadow: 0 0 20px #ff00ff;
     display: flex;
     flex-direction: column;
@@ -368,7 +368,7 @@
     border: 2px solid #00ffff;
     background: rgba(0, 8, 20, 0.96);
     padding: 0;
-    z-index: 20;
+    z-index: 200;
     box-shadow: 0 0 28px #00ffff55, inset 0 0 40px rgba(0, 255, 255, 0.03);
     display: flex;
     flex-direction: column;
@@ -556,3 +556,67 @@
     background: #ff00ff;
     box-shadow: 0 0 8px #ff00ff;
 }
+
+/* ── NEWS_GLOBO | Mobile Vertical Stack (Sovereign Manual Fix) ── */
+@media (max-width: 768px) {
+    #globeViz {
+        left: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw;
+        z-index: 1;
+    }
+
+    /* 1. CONSOLA: Arriba, centrada, 15% de alto, 95% de ancho */
+    .error-console {
+        bottom: auto;
+
+        position: fixed !important;
+        top: 2vh !important;
+        left: 50% !important;
+        transform: translateX(-50%) translateY(-12px);
+        width: 80vw !important;
+        max-width: 80vw;
+        max-height: 25vh !important;
+        margin: 0 !important;
+        /* z-index: 10 !important; /* Respetando z-index original */
+        border-radius: 8px 8px 0 0;
+    }
+
+    .error-console.panel-revealed {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .terminal-box {
+        position: fixed !important;
+        top: auto;
+        bottom: 10px !important;
+        left: 50% !important;
+        transform: translateX(-50%) translateY(-12px);
+        width: 80vw !important;
+        max-width: 80vw !important;
+        max-height: 40vh !important;
+        margin: 0 !important;
+        /* z-index: 100 !important; /* Respetando z-index original */
+        border-radius: 8px 8px 0 0;
+    }
+
+    .terminal-box.panel-revealed {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .reader-box {
+        bottom: 25vh;
+        left: 50%;
+        transform: translateX(-50%) translateY(16px);
+        width: 90vw;
+        max-width: 90vw;
+        max-height: 60vh;
+        /* z-index: 200; /* Respetando z-index original */
+        border-radius: 8px;
+    }
+
+    .reader-box.reader-visible {
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
