@@ -40,7 +40,31 @@ author = 34518249
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = 'find . \( -type d -name "__pycache__" -o -name "*.db" \) -exec rm -rf {} +'
+args = "find . -type d -name \"__pycache__\" -exec rm -rf {} +"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "find . -type f -name \"*.db\" -delete"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "git config --global user.name \"0xDimonet78\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "git config --global user.email \"dimonet78@gmail.com\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "git add ."
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "git commit -m \"auto update\" || echo \"No changes\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "git push https://$GITHUB_TOKEN@github.com/Virtual-Valhalla/News_globo.git main"
 
 [[ports]]
 localPort = 5000
